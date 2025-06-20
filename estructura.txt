@@ -1,0 +1,191 @@
+Listado de rutas de carpetas para el volumen Acer
+El número de serie del volumen es D8DA-36C3
+C:.
+¦   datos_prueba.csv
+¦   document_processor.log
+¦   estructura.txt
+¦   extracted_text.txt
+¦   extracted_text_ocr.txt
+¦   generate_test_data.py
+¦   main.py
+¦   processed_image_0.png
+¦   
++---generated_docs
+¦       constancia_14170841.pdf
+¦       constancia_14904135.pdf
+¦       constancia_21233136.pdf
+¦       constancia_25787412.pdf
+¦       constancia_27534378.pdf
+¦       constancia_29515946.pdf
+¦       constancia_32521184.pdf
+¦       constancia_39362005.pdf
+¦       constancia_45346066.pdf
+¦       constancia_48229431.pdf
+¦       constancia_54235291.pdf
+¦       constancia_54605866.pdf
+¦       constancia_59011013.pdf
+¦       constancia_60176168.pdf
+¦       constancia_70907825.pdf
+¦       constancia_72996199.pdf
+¦       constancia_76236343.pdf
+¦       constancia_78544208.pdf
+¦       constancia_96851080.pdf
+¦       constancia_C14069387.pdf
+¦       constancia_C17109565.pdf
+¦       constancia_C18994950.pdf
+¦       constancia_C21958010.pdf
+¦       constancia_C28355213.pdf
+¦       constancia_C33255190.pdf
+¦       constancia_C43065450.pdf
+¦       constancia_C47955607.pdf
+¦       constancia_C59394045.pdf
+¦       constancia_C64808731.pdf
+¦       constancia_C69109899.pdf
+¦       constancia_C72989417.pdf
+¦       constancia_C74573495.pdf
+¦       constancia_C75436664.pdf
+¦       constancia_C82952636.pdf
+¦       constancia_C83118007.pdf
+¦       test_document_21300759.pdf
+¦       test_document_2411367.pdf
+¦       test_document_C21300759.pdf
+¦       
++---generated_images
+¦       constancia_14170841_page_1.jpg
+¦       constancia_14904135_page_1.jpg
+¦       constancia_21233136_page_1.jpg
+¦       constancia_25787412_page_1.jpg
+¦       constancia_27534378_page_1.jpg
+¦       constancia_29515946_page_1.jpg
+¦       constancia_32521184_page_1.jpg
+¦       constancia_39362005_page_1.jpg
+¦       constancia_45346066_page_1.jpg
+¦       constancia_48229431_page_1.jpg
+¦       constancia_54235291_page_1.jpg
+¦       constancia_54605866_page_1.jpg
+¦       constancia_59011013_page_1.jpg
+¦       constancia_60176168_page_1.jpg
+¦       constancia_70907825_page_1.jpg
+¦       constancia_72996199_page_1.jpg
+¦       constancia_76236343_page_1.jpg
+¦       constancia_78544208_page_1.jpg
+¦       constancia_96851080_page_1.jpg
+¦       constancia_C14069387_page_1.jpg
+¦       constancia_C17109565_page_1.jpg
+¦       constancia_C18994950_page_1.jpg
+¦       constancia_C21958010_page_1.jpg
+¦       constancia_C28355213_page_1.jpg
+¦       constancia_C33255190_page_1.jpg
+¦       constancia_C43065450_page_1.jpg
+¦       constancia_C47955607_page_1.jpg
+¦       constancia_C59394045_page_1.jpg
+¦       constancia_C64808731_page_1.jpg
+¦       constancia_C69109899_page_1.jpg
+¦       constancia_C72989417_page_1.jpg
+¦       constancia_C74573495_page_1.jpg
+¦       constancia_C75436664_page_1.jpg
+¦       constancia_C82952636_page_1.jpg
+¦       constancia_C83118007_page_1.jpg
+¦       test_document_21300759_page_1.jpg
+¦       test_document_2411367_page_1.jpg
+¦       test_document_C21300759_page_1.jpg
+¦       
++---generated_pdfs_from_images
+¦       constancia_14170841_page_1.pdf
+¦       constancia_14904135_page_1.pdf
+¦       constancia_21233136_page_1.pdf
+¦       constancia_25787412_page_1.pdf
+¦       constancia_27534378_page_1.pdf
+¦       constancia_29515946_page_1.pdf
+¦       constancia_32521184_page_1.pdf
+¦       constancia_39362005_page_1.pdf
+¦       constancia_45346066_page_1.pdf
+¦       constancia_48229431_page_1.pdf
+¦       constancia_54235291_page_1.pdf
+¦       constancia_54605866_page_1.pdf
+¦       constancia_59011013_page_1.pdf
+¦       constancia_60176168_page_1.pdf
+¦       constancia_70907825_page_1.pdf
+¦       constancia_72996199_page_1.pdf
+¦       constancia_76236343_page_1.pdf
+¦       constancia_78544208_page_1.pdf
+¦       constancia_96851080_page_1.pdf
+¦       constancia_C14069387_page_1.pdf
+¦       constancia_C17109565_page_1.pdf
+¦       constancia_C18994950_page_1.pdf
+¦       constancia_C21958010_page_1.pdf
+¦       constancia_C28355213_page_1.pdf
+¦       constancia_C33255190_page_1.pdf
+¦       constancia_C43065450_page_1.pdf
+¦       constancia_C47955607_page_1.pdf
+¦       constancia_C59394045_page_1.pdf
+¦       constancia_C64808731_page_1.pdf
+¦       constancia_C69109899_page_1.pdf
+¦       constancia_C72989417_page_1.pdf
+¦       constancia_C74573495_page_1.pdf
+¦       constancia_C75436664_page_1.pdf
+¦       constancia_C82952636_page_1.pdf
+¦       constancia_C83118007_page_1.pdf
+¦       test_document_21300759_page_1.pdf
+¦       test_document_2411367_page_1.pdf
+¦       test_document_C21300759_page_1.pdf
+¦       
++---src
+¦   ¦   __init__.py
+¦   ¦   
+¦   +---api
+¦   ¦   ¦   routes.py
+¦   ¦   ¦   __init__.py
+¦   ¦   ¦   
+¦   ¦   +---__pycache__
+¦   ¦           routes.cpython-312.pyc
+¦   ¦           __init__.cpython-312.pyc
+¦   ¦           
+¦   +---database
+¦   ¦   ¦   db_connector.py
+¦   ¦   ¦   
+¦   ¦   +---__pycache__
+¦   ¦           db_connector.cpython-312.pyc
+¦   ¦           
+¦   +---generators
+¦   ¦   ¦   document_generator.py
+¦   ¦   ¦   pdf_generator.py
+¦   ¦   ¦   __init__.py
+¦   ¦   ¦   
+¦   ¦   +---__pycache__
+¦   ¦           document_generator.cpython-312.pyc
+¦   ¦           __init__.cpython-312.pyc
+¦   ¦           
+¦   +---processors
+¦   ¦   ¦   document_processor.py
+¦   ¦   ¦   image_processor.py
+¦   ¦   ¦   pdf_processor.py
+¦   ¦   ¦   text_parser.py
+¦   ¦   ¦   __init__.py
+¦   ¦   ¦   
+¦   ¦   +---__pycache__
+¦   ¦           document_processor.cpython-312.pyc
+¦   ¦           image_processor.cpython-312.pyc
+¦   ¦           pdf_processor.cpython-312.pyc
+¦   ¦           text_parser.cpython-312.pyc
+¦   ¦           __init__.cpython-312.pyc
+¦   ¦           
+¦   +---utils
+¦   ¦       file_utils.py
+¦   ¦       jpg_to_pdf.py
+¦   ¦       pdf_to_jpg.py
+¦   ¦       __init__.py
+¦   ¦       
+¦   +---__pycache__
+¦           __init__.cpython-312.pyc
+¦           
++---tests
+¦   ¦   generate_test_document.py
+¦   ¦   test_processors.py
+¦   ¦   __init__.py
+¦   ¦   
+¦   +---__pycache__
+¦           generate_test_document.cpython-312.pyc
+¦           __init__.cpython-312.pyc
+¦           
++---uploads

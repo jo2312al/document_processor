@@ -1,0 +1,39 @@
+# Archivos y directorios generados
+/converted_pdfs/
+/generated_docs/
+/generated_images/
+/generated_pdfs_from_images/
+/labels/
+/datasets/
+/logs/
+
+# Archivos de datos sensibles
+/data/datos_prueba.csv
+/data/nombres_apellidos.csv
+/data/apellidos-20.csv
+/data/apellidos.csv
+/data/hombres.csv
+/data/mujeres.csv
+
+# Archivos de salida y temporales
+/output.json
+/extracted_text.txt
+/extracted_text_ocr.txt
+/processed_image_0.png
+
+# Modelos entrenados
+/models/
+
+# Archivos de caché de Python
+__pycache__/
+*.pyc
+
+# Archivos de modelo preentrenado
+/yolov8n.pt
+
+# Directorios vacíos o no esenciales
+/fonts/
+/uploads/
+
+# Archivos de log
+*.log

@@ -1,0 +1,287 @@
+[
+  {
+    "filename": "constancia_08309997_0_lorem_page_1.pdf",
+    "tokens": [
+      "08309997",
+      "BENJAMIN DANIEL",
+      "GIFRE",
+      "CEGARRA",
+      "Licenciatura en Administración",
+      "21 DE ENERO DE 2012 AL 19 DE JULIO DE 2012"
+    ],
+    "bboxes": [
+      [
+        427,
+        322,
+        528,
+        333
+      ],
+      [
+        154,
+        71,
+        216,
+        83
+      ],
+      [
+        520,
+        52,
+        543,
+        63
+      ],
+      [
+        272,
+        88,
+        348,
+        99
+      ],
+      [
+        291,
+        36,
+        337,
+        51
+      ],
+      [
+        349,
+        88,
+        362,
+        98
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_09307899_2_random_page_1.pdf",
+    "tokens": [
+      "09307899",
+      "VICENTA FRANCISCA",
+      "UDIAS",
+      "HADRI",
+      "Ingeniería Industrial",
+      "3 DE DICIEMBRE DE 1980 AL 1 DE JUNIO DE 1981"
+    ],
+    "bboxes": [
+      [
+        129,
+        72,
+        233,
+        86
+      ],
+      [
+        441,
+        35,
+        455,
+        47
+      ],
+      [
+        385,
+        36,
+        440,
+        49
+      ],
+      [
+        637,
+        66,
+        648,
+        78
+      ],
+      [
+        441,
+        35,
+        455,
+        47
+      ],
+      [
+        130,
+        57,
+        168,
+        69
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_19308260_4_random_page_1.pdf",
+    "tokens": [
+      "19308260",
+      "FABIO JUNIOR",
+      "FRONTIÑAN",
+      "REQUENO",
+      "Licenciatura en Contaduría",
+      "15 DE ENERO DE 2009 AL 14 DE JULIO DE 2009"
+    ],
+    "bboxes": [
+      [
+        524,
+        84,
+        625,
+        97
+      ],
+      [
+        495,
+        72,
+        504,
+        80
+      ],
+      [
+        740,
+        45,
+        854,
+        60
+      ],
+      [
+        910,
+        65,
+        932,
+        74
+      ],
+      [
+        319,
+        37,
+        354,
+        49
+      ],
+      [
+        495,
+        72,
+        504,
+        80
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_79305033_1_formato_page_1.pdf",
+    "tokens": [
+      "79305033",
+      "CRISTIAN GERMAN",
+      "HIDALGA",
+      "ZALAMA",
+      "Ingeniería en Electrónica",
+      "25 DE FEBRERO DE 2011 AL 24 DE AGOSTO DE 2011"
+    ],
+    "bboxes": [
+      [
+        50,
+        350,
+        144,
+        362
+      ],
+      [
+        405,
+        313,
+        498,
+        324
+      ],
+      [
+        83,
+        148,
+        105,
+        160
+      ],
+      [
+        716,
+        310,
+        800,
+        322
+      ],
+      [
+        270,
+        315,
+        285,
+        326
+      ],
+      [
+        384,
+        78,
+        410,
+        89
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_89304133_3_random_page_1.pdf",
+    "tokens": [
+      "89304133",
+      "PIERPAOLO",
+      "BRACEROS",
+      "NAZARENO",
+      "Ingeniería en Sistemas Computacionales",
+      "29 DE NOVIEMBRE DE 1984 AL 28 DE MAYO DE 1985"
+    ],
+    "bboxes": [
+      [
+        732,
+        136,
+        856,
+        149
+      ],
+      [
+        394,
+        35,
+        471,
+        48
+      ],
+      [
+        332,
+        103,
+        458,
+        115
+      ],
+      [
+        366,
+        55,
+        395,
+        64
+      ],
+      [
+        208,
+        35,
+        251,
+        48
+      ],
+      [
+        285,
+        153,
+        313,
+        166
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  }
+]
