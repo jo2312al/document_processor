@@ -1,107 +1,50 @@
 [
   {
-    "filename": "constancia_08309997_0_lorem_page_1.pdf",
+    "filename": "constancia_03301348_0_formato_page_1.pdf",
     "tokens": [
-      "08309997",
-      "BENJAMIN DANIEL",
-      "GIFRE",
-      "CEGARRA",
-      "Licenciatura en Administración",
-      "21 DE ENERO DE 2012 AL 19 DE JULIO DE 2012"
-    ],
-    "bboxes": [
-      [
-        427,
-        322,
-        528,
-        333
-      ],
-      [
-        154,
-        71,
-        216,
-        83
-      ],
-      [
-        520,
-        52,
-        543,
-        63
-      ],
-      [
-        272,
-        88,
-        348,
-        99
-      ],
-      [
-        291,
-        36,
-        337,
-        51
-      ],
-      [
-        349,
-        88,
-        362,
-        98
-      ]
-    ],
-    "labels": [
-      "B-ALU_MATRICULA",
-      "B-ALU_NOMBRE",
-      "B-ALU_PATERNO",
-      "B-ALU_MATERNO",
-      "B-ALU_CARRERA",
-      "B-ALU_SERVICIO"
-    ]
-  },
-  {
-    "filename": "constancia_09307899_2_random_page_1.pdf",
-    "tokens": [
-      "09307899",
-      "VICENTA FRANCISCA",
-      "UDIAS",
-      "HADRI",
+      "03301348",
+      "CLAUDIA BELEN",
+      "BETRIU",
+      "TERCEÑO",
       "Ingeniería Industrial",
-      "3 DE DICIEMBRE DE 1980 AL 1 DE JUNIO DE 1981"
+      "29 DE NOVIEMBRE DE 1980 AL 28 DE MAYO DE 1981"
     ],
     "bboxes": [
       [
-        129,
-        72,
-        233,
-        86
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        441,
-        35,
-        455,
-        47
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        385,
-        36,
-        440,
-        49
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        637,
-        66,
-        648,
-        78
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        441,
-        35,
-        455,
-        47
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        130,
-        57,
-        168,
-        69
+        0,
+        0,
+        1000,
+        1000
       ]
     ],
     "labels": [
@@ -114,51 +57,51 @@
     ]
   },
   {
-    "filename": "constancia_19308260_4_random_page_1.pdf",
+    "filename": "constancia_05307294_1_formato_page_1.pdf",
     "tokens": [
-      "19308260",
-      "FABIO JUNIOR",
-      "FRONTIÑAN",
-      "REQUENO",
-      "Licenciatura en Contaduría",
-      "15 DE ENERO DE 2009 AL 14 DE JULIO DE 2009"
+      "05307294",
+      "FRANCISCA ROCIO",
+      "TANCO",
+      "ESPESO",
+      "Ingeniería Industrial",
+      "10 DE ABRIL DE 1997 AL 7 DE OCTUBRE DE 1997"
     ],
     "bboxes": [
       [
-        524,
-        84,
-        625,
-        97
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        495,
-        72,
-        504,
-        80
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        740,
-        45,
-        854,
-        60
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        910,
-        65,
-        932,
-        74
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        319,
-        37,
-        354,
-        49
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        495,
-        72,
-        504,
-        80
+        0,
+        0,
+        1000,
+        1000
       ]
     ],
     "labels": [
@@ -171,51 +114,51 @@
     ]
   },
   {
-    "filename": "constancia_79305033_1_formato_page_1.pdf",
+    "filename": "constancia_12308701_5_formato_page_1.pdf",
     "tokens": [
-      "79305033",
-      "CRISTIAN GERMAN",
-      "HIDALGA",
-      "ZALAMA",
-      "Ingeniería en Electrónica",
-      "25 DE FEBRERO DE 2011 AL 24 DE AGOSTO DE 2011"
+      "12308701",
+      "BOLESLAW",
+      "MANZANEQUE",
+      "NOALES",
+      "Ingeniería Industrial",
+      "19 DE JULIO DE 2011 AL 15 DE ENERO DE 2012"
     ],
     "bboxes": [
       [
-        50,
-        350,
-        144,
-        362
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        405,
-        313,
-        498,
-        324
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        83,
-        148,
-        105,
-        160
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        716,
-        310,
-        800,
-        322
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        270,
-        315,
-        285,
-        326
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        384,
-        78,
-        410,
-        89
+        0,
+        0,
+        1000,
+        1000
       ]
     ],
     "labels": [
@@ -228,51 +171,678 @@
     ]
   },
   {
-    "filename": "constancia_89304133_3_random_page_1.pdf",
+    "filename": "constancia_13301070_6_lorem_page_1.pdf",
     "tokens": [
-      "89304133",
-      "PIERPAOLO",
-      "BRACEROS",
-      "NAZARENO",
+      "13301070",
+      "AASE",
+      "TRASERRA",
+      "PINZARU",
+      "Ingeniería Industrial",
+      "15 DE NOVIEMBRE DE 1978 AL 14 DE MAYO DE 1979"
+    ],
+    "bboxes": [
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_13305561_10_random_page_1.pdf",
+    "tokens": [
+      "13305561",
+      "ROSA BEGOÑA",
+      "CALDEVILLA",
+      "ELVIR",
+      "Licenciatura en Administración",
+      "23 DE FEBRERO DE 2008 AL 21 DE AGOSTO DE 2008"
+    ],
+    "bboxes": [
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_13309190_7_lorem_page_1.pdf",
+    "tokens": [
+      "13309190",
+      "AKAKI",
+      "ZUMALDE",
+      "CASAO",
       "Ingeniería en Sistemas Computacionales",
-      "29 DE NOVIEMBRE DE 1984 AL 28 DE MAYO DE 1985"
+      "23 DE SEPTIEMBRE DE 2013 AL 22 DE MARZO DE 2014"
     ],
     "bboxes": [
       [
-        732,
-        136,
-        856,
-        149
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        394,
-        35,
-        471,
-        48
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        332,
-        103,
-        458,
-        115
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        366,
-        55,
-        395,
-        64
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        208,
-        35,
-        251,
-        48
+        0,
+        0,
+        1000,
+        1000
       ],
       [
-        285,
-        153,
-        313,
-        166
+        0,
+        0,
+        1000,
+        1000
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_14305143_8_lorem_page_1.pdf",
+    "tokens": [
+      "14305143",
+      "FANNY ALEXANDRA",
+      "OTTO",
+      "LORD",
+      "Licenciatura en Administración",
+      "17 DE MARZO DE 1992 AL 13 DE SEPTIEMBRE DE 1992"
+    ],
+    "bboxes": [
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_20305110_2_formato_page_1.pdf",
+    "tokens": [
+      "20305110",
+      "MAYCON",
+      "PICOT",
+      "SUAU",
+      "Licenciatura en Contaduría",
+      "21 DE ABRIL DE 2001 AL 18 DE OCTUBRE DE 2001"
+    ],
+    "bboxes": [
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_24306498_4_formato_page_1.pdf",
+    "tokens": [
+      "24306498",
+      "RICARDO ARTURO",
+      "GAYO",
+      "PREGO",
+      "Ingeniería en Sistemas Computacionales",
+      "14 DE ABRIL DE 1987 AL 11 DE OCTUBRE DE 1987"
+    ],
+    "bboxes": [
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_76308144_11_random_page_1.pdf",
+    "tokens": [
+      "76308144",
+      "GILMER",
+      "BONACHE",
+      "DE JUANA",
+      "Ingeniería en Sistemas Computacionales",
+      "3 DE SEPTIEMBRE DE 1993 AL 2 DE MARZO DE 1994"
+    ],
+    "bboxes": [
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_77304318_13_random_page_1.pdf",
+    "tokens": [
+      "77304318",
+      "NIKOLA",
+      "PINILLO",
+      "CABALLO",
+      "Licenciatura en Administración",
+      "4 DE OCTUBRE DE 1998 AL 2 DE ABRIL DE 1999"
+    ],
+    "bboxes": [
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_81305723_3_formato_page_1.pdf",
+    "tokens": [
+      "81305723",
+      "BENJAMIN IGNACIO",
+      "GARRE",
+      "MARIS",
+      "Ingeniería en Sistemas Computacionales",
+      "19 DE FEBRERO DE 1982 AL 18 DE AGOSTO DE 1982"
+    ],
+    "bboxes": [
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_83305088_12_random_page_1.pdf",
+    "tokens": [
+      "83305088",
+      "IRAM",
+      "FRAGUIO",
+      "OGBEBOR",
+      "Ingeniería Industrial",
+      "5 DE AGOSTO DE 1992 AL 1 DE FEBRERO DE 1993"
+    ],
+    "bboxes": [
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_85302962_14_random_page_1.pdf",
+    "tokens": [
+      "85302962",
+      "CARLA MARINA",
+      "BARAÑANO",
+      "CABILLA",
+      "Licenciatura en Contaduría",
+      "11 DE SEPTIEMBRE DE 1976 AL 10 DE MARZO DE 1977"
+    ],
+    "bboxes": [
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ]
+    ],
+    "labels": [
+      "B-ALU_MATRICULA",
+      "B-ALU_NOMBRE",
+      "B-ALU_PATERNO",
+      "B-ALU_MATERNO",
+      "B-ALU_CARRERA",
+      "B-ALU_SERVICIO"
+    ]
+  },
+  {
+    "filename": "constancia_86309780_9_lorem_page_1.pdf",
+    "tokens": [
+      "86309780",
+      "ROCIO DOLORES",
+      "ABAUNZA",
+      "CAMPIÑEZ",
+      "Ingeniería en Electrónica",
+      "10 DE ENERO DE 2021 AL 9 DE JULIO DE 2021"
+    ],
+    "bboxes": [
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
+      ],
+      [
+        0,
+        0,
+        1000,
+        1000
       ]
     ],
     "labels": [

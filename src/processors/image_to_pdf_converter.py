@@ -31,6 +31,20 @@ def convert_images_to_pdf(num_images=None):
     logger.info("Iniciando conversión de imágenes a PDFs")
     print("Iniciando conversión de imágenes a PDFs")
     
+    # Vaciar la carpeta de salida (OUTPUT_DIR) antes del proceso
+    logger.info(f"Vaciando la carpeta de salida: {OUTPUT_DIR}")
+    print(f"Vaciando la carpeta de salida: {OUTPUT_DIR}")
+    for file in os.listdir(OUTPUT_DIR):
+        file_path = os.path.join(OUTPUT_DIR, file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+                logger.info(f"Eliminado {file_path}")
+                print(f"Eliminado {file_path}")
+        except Exception as e:
+            logger.error(f"Error al eliminar {file_path}: {str(e)}")
+            print(f"Error al eliminar {file_path}: {str(e)}")
+    
     image_files = [f for f in os.listdir(IMAGE_DIR) if f.endswith('.jpg')]
     total_images = len(image_files)
     logger.info(f"Encontradas {total_images} imágenes en {IMAGE_DIR}: {image_files[:5]}...")

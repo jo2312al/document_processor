@@ -7,6 +7,7 @@ import torch
 import psutil
 from torch.utils.data import Dataset, DataLoader
 from transformers import LayoutLMForTokenClassification, LayoutLMTokenizerFast
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from sklearn.metrics import precision_recall_fscore_support
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from config import BASE_DIR, DATA_DIR, MODELS_DIR, LOGS_DIR, LOGGING_FORMAT, LOGGING_LEVEL
@@ -14,7 +15,7 @@ from config import BASE_DIR, DATA_DIR, MODELS_DIR, LOGS_DIR, LOGGING_FORMAT, LOG
 # Configurar logging
 os.makedirs(LOGS_DIR, exist_ok=True)
 logging.basicConfig(
-    filename=os.path.join(LOGS_DIR, "training.log"),
+    filename=os.path.join(LOGS_DIR, 'training.log'),
     level=getattr(logging, LOGGING_LEVEL),
     format=LOGGING_FORMAT
 )
@@ -70,14 +71,24 @@ class PDFDataset(Dataset):
         bboxes = item["bboxes"]
         labels = item["labels"]
 
-        # Validar y corregir bboxes
-        bboxes = [
-            [0, 0, 1000, 1000] if not bbox or bbox == [0, 0, 0, 0] or 
-            (bbox[2] - bbox[0] <= 10 or bbox[3] - bbox[1] <= 10) else bbox 
-            for bbox in bboxes
-        ]
+        # Validar y normalizar bboxes
+        normalized_bboxes = []
+        for bbox in bboxes:
+            if not bbox or len(bbox) != 4 or any(v < 0 for v in bbox):
+                logger.warning(f"Bbox inválido en idx {idx}: {bbox}, usando default")
+                normalized_bboxes.append([0, 0, 1000, 1000])
+                continue
+            x_min, y_min, x_max, y_max = map(int, bbox)
+            if x_max <= x_min or y_max <= y_min:
+                logger.warning(f"Bbox con dimensiones inválidas en idx {idx}: {bbox}, usando default")
+                normalized_bboxes.append([0, 0, 1000, 1000])
+                continue
+            x_min = max(0, min(1000, x_min))
+            y_min = max(0, min(1000, y_min))
+            x_max = max(0, min(1000, x_max))
+            y_max = max(0, min(1000, y_max))
+            normalized_bboxes.append([x_min, y_min, x_max, y_max])
 
-        # Tokenizar sin bboxes
         encoding = self.tokenizer(
             tokens,
             is_split_into_words=True,
@@ -88,7 +99,6 @@ class PDFDataset(Dataset):
             return_offsets_mapping=True
         )
 
-        # Alinear etiquetas y bboxes con subwords
         word_ids = encoding.word_ids()
         aligned_labels = [-100] * self.max_length
         aligned_bboxes = [[0, 0, 1000, 1000]] * self.max_length
@@ -98,7 +108,7 @@ class PDFDataset(Dataset):
                 continue
             if word_id < len(labels):
                 aligned_labels[i] = self.labels_map.get(labels[word_id], 0)
-                aligned_bboxes[i] = bboxes[word_id] if word_id < len(bboxes) else [0, 0, 1000, 1000]
+                aligned_bboxes[i] = normalized_bboxes[word_id] if word_id < len(normalized_bboxes) else [0, 0, 1000, 1000]
 
         return {
             "input_ids": encoding["input_ids"].squeeze(),
@@ -116,7 +126,8 @@ def train_model():
     tokenizer = LayoutLMTokenizerFast.from_pretrained("microsoft/layoutlm-base-uncased")
     model = LayoutLMForTokenClassification.from_pretrained(
         "microsoft/layoutlm-base-uncased",
-        num_labels=13
+        num_labels=13,
+        hidden_dropout_prob=0.2
     ).to(device)
 
     annotations_file = os.path.join(DATA_DIR, "annotations.json")
@@ -126,11 +137,15 @@ def train_model():
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
-    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=4)
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=16)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
-    num_epochs = 3
+    scheduler = CosineAnnealingLR(optimizer, T_max=10)
+    num_epochs = 15
+    best_f1 = 0
+    patience = 3
+    epochs_no_improve = 0
 
     for epoch in range(num_epochs):
         epoch_start_time = time.time()
@@ -186,9 +201,23 @@ def train_model():
 
         avg_val_loss = val_loss / len(val_loader)
         precision, recall, f1, _ = precision_recall_fscore_support(
-            all_labels, all_preds, average='weighted', zero_division=1
+            all_labels, all_preds, average='weighted', zero_division=0
         )
         logger.info(f"Epoch {epoch+1}/{num_epochs}, Val Loss: {avg_val_loss:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}")
+        
+        if f1 > best_f1:
+            best_f1 = f1
+            epochs_no_improve = 0
+            model.save_pretrained(os.path.join(MODELS_DIR, "layoutlm_model_best"))
+            tokenizer.save_pretrained(os.path.join(MODELS_DIR, "layoutlm_model_best"))
+        else:
+            epochs_no_improve += 1
+        
+        if epochs_no_improve >= patience:
+            logger.info(f"Early stopping en época {epoch+1}")
+            break
+        
+        scheduler.step()
         log_resources(epoch_start_time, epoch)
 
     model.save_pretrained(os.path.join(MODELS_DIR, "layoutlm_model"))
