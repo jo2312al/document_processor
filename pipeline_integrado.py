@@ -1,15 +1,10 @@
 # ==============================================================================
-# ARCHIVO: pipeline_integrado.py (Versión Final - Ultra-Optimizado)
-#
-# PROPÓSITO:
-# Orquesta el pipeline completo de creación de datos y entrenamiento del modelo
-# de la forma más eficiente posible.
+# ARCHIVO 1 (CORREGIDO): pipeline_integrado.py
+# UBICACIÓN: En la raíz de tu proyecto
 #
 # CAMBIOS:
-# - Se ha eliminado el paso explícito de "Procesar a Imágenes", ya que esa
-#   lógica ahora está integrada directamente en el paso de "Crear Datos",
-#   minimizando la escritura en disco y maximizando la velocidad.
-# - El pipeline ahora es más corto, más rápido y más fácil de seguir.
+# - (CRÍTICO) Se ha añadido el argumento 'num_workers' a la llamada de la
+#   función 'run_create_spacy_data' para solucionar el TypeError.
 # ==============================================================================
 
 import os
@@ -20,18 +15,16 @@ import argparse
 from tqdm import tqdm
 
 # --- Configuración de rutas y logging ---
-# Se asume que este script está en la carpeta raíz del proyecto.
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from config import (
-    LOGS_DIR, LOGGING_FORMAT, LOGGING_LEVEL
+    BASE_DIR, LOGS_DIR, LOGGING_FORMAT, LOGGING_LEVEL, MODELS_DIR,
+    DATA_DIR, GENERATED_DOCS_DIR, GENERATED_IMAGES_DIR
 )
 
 # --- Importar la lógica refactorizada de cada script ---
-# Asegúrate de que cada uno de estos archivos exista en la ruta correcta
-# y contenga la función principal que hemos definido.
 from generate_test_data import generate_test_data
 from src.generators.pdf_generator import run_pdf_generation
-# El image_processor ya no se llama directamente
+from src.processors.image_processor import run_image_processing
 from src.processors.create_spacy_training_data import run_create_spacy_data
 from src.processors.create_spacy_file import run_create_spacy_file
 from src.processors.train_spacy import run_training
@@ -52,14 +45,15 @@ def run_integrated_pipeline(num_records, num_workers):
     """
     pipeline_logger.info(f"================ INICIANDO PIPELINE (records={num_records}, workers={num_workers}) ================")
     
-    # --- Definir los pasos del pipeline en el orden correcto ---
+    # Lista de pasos a ejecutar
     pipeline_steps = [
         {"name": "1. Generando Datos de Prueba (CSV)", "func": generate_test_data, "kwargs": {"num_records": num_records}},
         {"name": "2. Generando PDFs y Etiquetas", "func": run_pdf_generation, "kwargs": {"num_records": num_records}},
-        # El paso 3 (image_processor) ahora está integrado en el paso 4
-        {"name": "3. Procesando PDFs y Alineando Datos", "func": run_create_spacy_data, "kwargs": {"num_records": num_records, "num_workers": num_workers}},
-        {"name": "4. Validando y Creando Archivo .spacy", "func": run_create_spacy_file, "kwargs": {}},
-        {"name": "5. Entrenando Modelo spaCy", "func": run_training, "kwargs": {}}
+        {"name": "3. Procesando PDFs a Imágenes", "func": run_image_processing, "kwargs": {"num_records": num_records}},
+        # --- ¡CORRECCIÓN! Se añade 'num_workers' a los argumentos ---
+        {"name": "4. Creando Datos JSON para spaCy", "func": run_create_spacy_data, "kwargs": {"num_records": num_records, "num_workers": num_workers}},
+        {"name": "5. Validando y Creando Archivo .spacy", "func": run_create_spacy_file, "kwargs": {}},
+        {"name": "6. Entrenando Modelo spaCy", "func": run_training, "kwargs": {}}
     ]
 
     with tqdm(total=len(pipeline_steps), desc="Pipeline General", unit="paso") as pbar:
@@ -69,16 +63,14 @@ def run_integrated_pipeline(num_records, num_workers):
             start_time = time.time()
             
             try:
-                # Ejecutar la función con sus argumentos
                 step_kwargs = step.get('kwargs', {})
                 step['func'](**step_kwargs)
-                
                 elapsed_time = time.time() - start_time
                 pipeline_logger.info(f"--- Paso '{step['name']}' completado en {elapsed_time:.2f}s ---")
             except Exception as e:
                 pipeline_logger.critical(f"El pipeline falló en '{step['name']}': {e}", exc_info=True)
                 print(f"\nERROR: El pipeline falló en el paso '{step['name']}'. Revisa el log 'pipeline_integrado.log'.")
-                return # Detener el pipeline si un paso falla
+                return
             
             pbar.update(1)
 
@@ -92,7 +84,6 @@ if __name__ == "__main__":
     parser.add_argument("--workers", type=int, default=half_cores, help=f"Workers para procesos paralelos (defecto: {half_cores}).")
     args = parser.parse_args()
     
-    # Validar que los workers no excedan los núcleos de la CPU
     max_workers = os.cpu_count() or 1
     if args.workers > max_workers:
         args.workers = max_workers

@@ -1,234 +1,110 @@
 import os
-import sys
 import json
 import logging
-import time
-import torch
-import psutil
-from torch.utils.data import Dataset, DataLoader
-from transformers import LayoutLMForTokenClassification, LayoutLMTokenizerFast
-from torch.optim.lr_scheduler import CosineAnnealingLR
-from sklearn.metrics import precision_recall_fscore_support
+import sys
+import argparse
+import random
+import spacy
+from spacy.training.example import Example
+from spacy.util import minibatch, compounding
+from tqdm import tqdm
+
+# --- Configuración de rutas ---
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from config import BASE_DIR, DATA_DIR, MODELS_DIR, LOGS_DIR, LOGGING_FORMAT, LOGGING_LEVEL
+from config import DATA_DIR, MODELS_DIR
 
-# Configurar logging
-os.makedirs(LOGS_DIR, exist_ok=True)
-logging.basicConfig(
-    filename=os.path.join(LOGS_DIR, 'training.log'),
-    level=getattr(logging, LOGGING_LEVEL),
-    format=LOGGING_FORMAT
-)
-logger = logging.getLogger(__name__)
+# --- Función Principal (Lógica Encapsulada) ---
+def run_training(model_path=None, n_iter=30, dropout=0.35, batch_size=8):
+    """
+    Entrena o re-entrena un modelo NER de spaCy.
+    """
+    logger = logging.getLogger("pipeline_integrado.train_spacy")
+    training_data_file = os.path.join(DATA_DIR, 'spacy_training_data.json')
+    output_model_dir = os.path.join(MODELS_DIR, 'spacy_model')
 
-def log_resources(start_time, epoch=None):
-    """Registra uso de CPU, RAM y GPU (si aplica)."""
-    cpu_usage = psutil.cpu_percent(interval=0.1)
-    memory_info = psutil.virtual_memory()
-    ram_usage_mb = memory_info.used / (1024 ** 2)
-    gpu_usage = "N/A"
-    gpu_memory = "N/A"
-    if torch.cuda.is_available():
-        try:
-            gpu_memory_allocated = torch.cuda.memory_allocated() / (1024 ** 2)
-            gpu_memory_cached = torch.cuda.memory_reserved() / (1024 ** 2)
-            gpu_memory = f"{gpu_memory_allocated:.2f}/{gpu_memory_cached:.2f} MB"
-        except Exception as e:
-            gpu_memory = f"Error: {str(e)}"
-    elapsed_time = time.time() - start_time
-    log_msg = (
-        f"{'Epoch ' + str(epoch+1) if epoch is not None else 'Total'} - "
-        f"CPU: {cpu_usage:.1f}%, RAM: {ram_usage_mb:.2f} MB, GPU: {gpu_usage}, "
-        f"GPU Memory: {gpu_memory}, Time: {elapsed_time:.2f}s"
-    )
-    logger.info(log_msg)
-    print(log_msg)
-    return elapsed_time
+    # Cargar modelo existente o crear uno nuevo
+    if model_path and os.path.exists(model_path):
+        nlp = spacy.load(model_path)
+        logger.info(f"Modelo cargado desde '{model_path}' para re-entrenamiento.")
+        print(f"\nModelo cargado desde '{model_path}' para continuar entrenamiento.")
+    else:
+        nlp = spacy.blank("es")
+        logger.info("Creado modelo 'es' en blanco para entrenamiento desde cero.")
+        print("\nCreando modelo nuevo desde cero.")
 
-class PDFDataset(Dataset):
-    def __init__(self, annotations_file, tokenizer, max_length=512):
-        self.tokenizer = tokenizer
-        self.max_length = max_length
-        with open(annotations_file, 'r', encoding='utf-8') as f:
-            self.data = json.load(f)
-        self.labels_map = {
-            "O": 0,
-            "B-ALU_MATRICULA": 1, "I-ALU_MATRICULA": 2,
-            "B-ALU_NOMBRE": 3, "I-ALU_NOMBRE": 4,
-            "B-ALU_PATERNO": 5, "I-ALU_PATERNO": 6,
-            "B-ALU_MATERNO": 7, "I-ALU_MATERNO": 8,
-            "B-ALU_CARRERA": 9, "I-ALU_CARRERA": 10,
-            "B-ALU_SERVICIO": 11, "I-ALU_SERVICIO": 12
-        }
-        logger.info(f"Cargados {len(self.data)} ejemplos desde {annotations_file}")
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        item = self.data[idx]
-        tokens = item["tokens"]
-        bboxes = item["bboxes"]
-        labels = item["labels"]
-
-        # Validar y normalizar bboxes
-        normalized_bboxes = []
-        for bbox in bboxes:
-            if not bbox or len(bbox) != 4 or any(v < 0 for v in bbox):
-                logger.warning(f"Bbox inválido en idx {idx}: {bbox}, usando default")
-                normalized_bboxes.append([0, 0, 1000, 1000])
-                continue
-            x_min, y_min, x_max, y_max = map(int, bbox)
-            if x_max <= x_min or y_max <= y_min:
-                logger.warning(f"Bbox con dimensiones inválidas en idx {idx}: {bbox}, usando default")
-                normalized_bboxes.append([0, 0, 1000, 1000])
-                continue
-            x_min = max(0, min(1000, x_min))
-            y_min = max(0, min(1000, y_min))
-            x_max = max(0, min(1000, x_max))
-            y_max = max(0, min(1000, y_max))
-            normalized_bboxes.append([x_min, y_min, x_max, y_max])
-
-        encoding = self.tokenizer(
-            tokens,
-            is_split_into_words=True,
-            return_tensors="pt",
-            truncation=True,
-            padding="max_length",
-            max_length=self.max_length,
-            return_offsets_mapping=True
-        )
-
-        word_ids = encoding.word_ids()
-        aligned_labels = [-100] * self.max_length
-        aligned_bboxes = [[0, 0, 1000, 1000]] * self.max_length
-
-        for i, word_id in enumerate(word_ids):
-            if word_id is None:
-                continue
-            if word_id < len(labels):
-                aligned_labels[i] = self.labels_map.get(labels[word_id], 0)
-                aligned_bboxes[i] = normalized_bboxes[word_id] if word_id < len(normalized_bboxes) else [0, 0, 1000, 1000]
-
-        return {
-            "input_ids": encoding["input_ids"].squeeze(),
-            "attention_mask": encoding["attention_mask"].squeeze(),
-            "bbox": torch.tensor(aligned_bboxes, dtype=torch.long),
-            "labels": torch.tensor(aligned_labels, dtype=torch.long)
-        }
-
-def train_model():
-    logger.info("Iniciando entrenamiento de LayoutLM")
-    start_time = time.time()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    logger.info(f"Usando dispositivo: {device}")
-
-    tokenizer = LayoutLMTokenizerFast.from_pretrained("microsoft/layoutlm-base-uncased")
-    model = LayoutLMForTokenClassification.from_pretrained(
-        "microsoft/layoutlm-base-uncased",
-        num_labels=13,
-        hidden_dropout_prob=0.2
-    ).to(device)
-
-    annotations_file = os.path.join(DATA_DIR, "annotations.json")
-    dataset = PDFDataset(annotations_file, tokenizer)
+    # Cargar datos de entrenamiento
+    if not os.path.exists(training_data_file):
+        logger.error(f"No se encontró el archivo de datos: {training_data_file}")
+        raise FileNotFoundError(f"Archivo no encontrado: {training_data_file}")
     
-    train_size = int(0.8 * len(dataset))
-    val_size = len(dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+    with open(training_data_file, 'r', encoding='utf-8') as f:
+        TRAIN_DATA = json.load(f)
+    logger.info(f"Cargados {len(TRAIN_DATA)} ejemplos de entrenamiento.")
 
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=16)
+    # Configurar el pipeline de NER
+    if "ner" not in nlp.pipe_names:
+        ner = nlp.add_pipe("ner", last=True)
+    else:
+        ner = nlp.get_pipe("ner")
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=2e-5)
-    scheduler = CosineAnnealingLR(optimizer, T_max=10)
-    num_epochs = 15
-    best_f1 = 0
-    patience = 3
-    epochs_no_improve = 0
+    for _, annotations in TRAIN_DATA:
+        for ent in annotations.get("entities"):
+            ner.add_label(ent[2])
 
-    for epoch in range(num_epochs):
-        epoch_start_time = time.time()
-        model.train()
-        train_loss = 0
-        for batch in train_loader:
-            input_ids = batch["input_ids"].to(device)
-            attention_mask = batch["attention_mask"].to(device)
-            bbox = batch["bbox"].to(device)
-            labels = batch["labels"].to(device)
-
-            outputs = model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                bbox=bbox,
-                labels=labels
-            )
-            loss = outputs.loss
-            train_loss += loss.item()
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-        avg_train_loss = train_loss / len(train_loader)
-        logger.info(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {avg_train_loss:.4f}")
-
-        model.eval()
-        val_loss = 0
-        all_preds = []
-        all_labels = []
-        with torch.no_grad():
-            for batch in val_loader:
-                input_ids = batch["input_ids"].to(device)
-                attention_mask = batch["attention_mask"].to(device)
-                bbox = batch["bbox"].to(device)
-                labels = batch["labels"].to(device)
-
-                outputs = model(
-                    input_ids=input_ids,
-                    attention_mask=attention_mask,
-                    bbox=bbox,
-                    labels=labels
-                )
-                val_loss += outputs.loss.item()
-
-                preds = torch.argmax(outputs.logits, dim=2).cpu().numpy()
-                labels = labels.cpu().numpy()
-                for p, l in zip(preds, labels):
-                    valid_indices = l != -100
-                    all_preds.extend(p[valid_indices])
-                    all_labels.extend(l[valid_indices])
-
-        avg_val_loss = val_loss / len(val_loader)
-        precision, recall, f1, _ = precision_recall_fscore_support(
-            all_labels, all_preds, average='weighted', zero_division=0
-        )
-        logger.info(f"Epoch {epoch+1}/{num_epochs}, Val Loss: {avg_val_loss:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}")
+    # Bucle de entrenamiento
+    other_pipes = [pipe for pipe in nlp.pipe_names if pipe != "ner"]
+    with nlp.disable_pipes(*other_pipes):
+        optimizer = nlp.resume_training() if model_path and os.path.exists(model_path) else nlp.begin_training()
         
-        if f1 > best_f1:
-            best_f1 = f1
-            epochs_no_improve = 0
-            model.save_pretrained(os.path.join(MODELS_DIR, "layoutlm_model_best"))
-            tokenizer.save_pretrained(os.path.join(MODELS_DIR, "layoutlm_model_best"))
-        else:
-            epochs_no_improve += 1
-        
-        if epochs_no_improve >= patience:
-            logger.info(f"Early stopping en época {epoch+1}")
-            break
-        
-        scheduler.step()
-        log_resources(epoch_start_time, epoch)
+        for itn in range(n_iter):
+            random.shuffle(TRAIN_DATA)
+            losses = {}
+            # Usar tqdm para la barra de progreso de los lotes
+            batches = minibatch(TRAIN_DATA, size=compounding(4.0, batch_size, 1.001))
+            
+            with tqdm(total=len(TRAIN_DATA), desc=f"Iteración {itn + 1}/{n_iter}") as pbar:
+                for batch in batches:
+                    examples = []
+                    for text, annotations in batch:
+                        try:
+                            doc = nlp.make_doc(text)
+                            examples.append(Example.from_dict(doc, annotations))
+                        except ValueError as e:
+                            # Ignorar errores de alineación que puedan surgir
+                            logger.warning(f"Saltando ejemplo por error de alineación: {e}")
+                            continue
+                    
+                    if examples: # Solo actualizar si hay ejemplos válidos
+                        nlp.update(examples, drop=dropout, sgd=optimizer, losses=losses)
+                    
+                    pbar.update(len(batch))
+                    pbar.set_postfix(loss=f"{losses.get('ner', 0.0):.2f}")
 
-    model.save_pretrained(os.path.join(MODELS_DIR, "layoutlm_model"))
-    tokenizer.save_pretrained(os.path.join(MODELS_DIR, "layoutlm_model"))
-    logger.info("Modelo guardado en models/layoutlm_model")
-    total_time = log_resources(start_time)
-    return total_time
+            logger.info(f"Iteración {itn + 1}/{n_iter}, Pérdida (Loss): {losses.get('ner', 0.0):.4f}")
 
+    # Guardar el modelo final
+    if not os.path.exists(output_model_dir):
+        os.makedirs(output_model_dir)
+    nlp.to_disk(output_model_dir)
+    logger.info(f"Modelo final guardado en: {output_model_dir}")
+    print(f"\n¡Entrenamiento completado! Modelo guardado en: {output_model_dir}")
+
+# --- Bloque de Ejecución Independiente ---
 if __name__ == "__main__":
+    from config import LOGS_DIR, LOGGING_FORMAT, LOGGING_LEVEL
+    
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    
+    parser = argparse.ArgumentParser(description="Entrena o re-entrena un modelo NER de spaCy.")
+    parser.add_argument("--iter", type=int, default=30, help="Número de iteraciones de entrenamiento.")
+    parser.add_argument("--model_path", type=str, default=None, help="Ruta a un modelo existente para continuar el entrenamiento (opcional).")
+    args = parser.parse_args()
+    
+    model_path_arg = args.model_path if args.model_path else os.path.join(MODELS_DIR, 'spacy_model')
+    
+    print(f"Iniciando entrenamiento...")
     try:
-        train_model()
+        run_training(model_path=model_path_arg, n_iter=args.iter)
     except Exception as e:
-        logger.error(f"Error en entrenamiento: {str(e)}")
-        raise
+        logging.error(f"Error fatal en la ejecución independiente: {e}", exc_info=True)
+        print(f"ERROR: {e}")

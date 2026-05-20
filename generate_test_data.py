@@ -5,141 +5,134 @@ import logging
 import argparse
 from datetime import datetime, timedelta
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from config import BASE_DIR, DATA_DIR, LOGS_DIR, LOGGING_FORMAT, LOGGING_LEVEL
-from src.database.db_connector import DBConnector
+import locale
+import mysql.connector
+from mysql.connector import Error
 
-# Configurar rutas
-NAMES_CSV = os.path.join(DATA_DIR, 'nombres_apellidos.csv')
-OUTPUT_CSV = os.path.join(DATA_DIR, 'datos_prueba.csv')
+# --- Configuración de rutas y logging ---
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
+try:
+    from config import DATA_DIR
+except ImportError:
+    DATA_DIR = "./data"
+    os.makedirs(DATA_DIR, exist_ok=True)
 
-# Crear directorios
-os.makedirs(LOGS_DIR, exist_ok=True)
-os.makedirs(DATA_DIR, exist_ok=True)
+# --- CLASE PARA LA CONEXIÓN A LA BASE DE DATOS ---
+class DBConnector:
+    """Maneja la conexión a la base de datos MySQL."""
+    def __init__(self, host='localhost', user='root', password='2312', database='servicio'):
+        self.config = {'host': host, 'user': user, 'password': password, 'database': database}
+        self.connection = None
+        self.logger = logging.getLogger("pipeline.db_connector")
 
-# Configurar logging
-logging.basicConfig(
-    filename=os.path.join(LOGS_DIR, 'document_processor.log'),
-    level=getattr(logging, LOGGING_LEVEL),
-    format=LOGGING_FORMAT
-)
-
-meses_espanol = [
-    'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-    'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
-]
-
-def generar_servicio():
-    start_date = datetime(1974, 1, 1)
-    end_date = datetime(2025, 12, 31)
-    inicio = start_date + timedelta(days=random.randint(0, (end_date - start_date).days))
-    fin = inicio + timedelta(days=180)
-    dia_inicio = inicio.day
-    mes_inicio = meses_espanol[inicio.month - 1]
-    anio_inicio = inicio.year
-    dia_fin = fin.day
-    mes_fin = meses_espanol[fin.month - 1]
-    anio_fin = fin.year
-    servicio = f"{dia_inicio} DE {mes_inicio} DE {anio_inicio} AL {dia_fin} DE {mes_fin} DE {anio_fin}"
-    if ',' in servicio:
-        servicio = servicio.replace(',', '')  # Evitar comas
-    return servicio
-
-import random
-
-def generate_matricula(year, add_c_prefix=False):
-    year_suffix = str(year)[-2:]
-    number = f"{random.randint(0, 9999):04d}"
-    matricula = f"{year_suffix}30{number}"
-    # Genera el prefijo 'C' solo en el 1% de los casos
-    add_c_prefix = random.random() < 0.01
-    return f"C{matricula}" if add_c_prefix else matricula
-
-def load_names_surnames(csv_path=NAMES_CSV):
-    if not os.path.exists(csv_path):
-        logging.error(f"CSV de nombres y apellidos no encontrado en {csv_path}")
-        raise FileNotFoundError(f"Ejecuta generate_names_surnames.py para crear {csv_path}")
-    return pd.read_csv(csv_path, encoding='utf-8')
-
-def generate_test_data(num_records):
-    logger = logging.getLogger(__name__)
-    
-    if os.path.exists(OUTPUT_CSV):
-        logger.info(f"{OUTPUT_CSV} ya existe. Sobrescribiendo.")
+    def connect(self):
+        """Establece la conexión con la base de datos."""
         try:
-            os.remove(OUTPUT_CSV)
-        except Exception as e:
-            logger.error(f"Error al eliminar {OUTPUT_CSV}: {e}")
+            self.connection = mysql.connector.connect(**self.config)
+            self.logger.info("Conexión a MySQL establecida.")
+            return self.connection
+        except Error as e:
+            self.logger.error(f"Error conectando a MySQL: {e}")
             raise
+
+    def close(self):
+        """Cierra la conexión."""
+        if self.connection and self.connection.is_connected():
+            self.connection.close()
+            self.logger.info("Conexión a MySQL cerrada.")
+
+    def get_carreras(self):
+        """Obtiene la lista de todas las carreras desde la tabla 'carrera'."""
+        if not self.connection or not self.connection.is_connected():
+            self.logger.error("No hay conexión a la base de datos.")
+            return []
+        
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT car_nombre FROM carrera;")
+            results = cursor.fetchall()
+            cursor.close()
+            carreras_list = [item[0] for item in results]
+            self.logger.info(f"Se obtuvieron {len(carreras_list)} carreras de la BBDD.")
+            return carreras_list
+        except Error as e:
+            self.logger.error(f"Error al obtener carreras: {e}")
+            return []
+
+# --- FUNCIÓN PRINCIPAL DE GENERACIÓN DE DATOS ---
+def generate_test_data(num_records, db_connector):
+    """
+    Genera el archivo CSV 'datos_prueba.csv' con una columna 'nombre_completo'
+    y usando la lista de carreras de la BBDD.
+    """
+    logger = logging.getLogger("pipeline.generate_test_data")
+    output_csv = os.path.join(DATA_DIR, 'datos_prueba.csv')
+    names_surnames_csv = os.path.join(DATA_DIR, 'nombres_apellidos.csv')
     
-    names_surnames = load_names_surnames()
+    if os.path.exists(output_csv):
+        logger.info(f"Sobrescribiendo archivo de datos de prueba existente: {output_csv}")
+        os.remove(output_csv)
     
     try:
-        db = DBConnector()
-        carreras = db.query("SELECT car_nombre FROM carrera") or [
-            ('Ingeniería en Sistemas Computacionales',),
-            ('Ingeniería Industrial',),
-            ('Licenciatura en Administración',),
-            ('Ingeniería en Electrónica',),
-            ('Licenciatura en Contaduría',)
-        ]
-    except Exception as e:
-        logger.warning(f"Error al conectar a la base de datos: {e}. Usando datos por defecto.")
-        carreras = [
-            ('Ingeniería en Sistemas Computacionales',),
-            ('Ingeniería Industrial',),
-            ('Licenciatura en Administración',),
-            ('Ingeniería en Electrónica',),
-            ('Licenciatura en Contaduría',)
-        ]
-    
-    years = [random.randint(1974, 2025) for _ in range(num_records)]
-    
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+    except locale.Error:
+        logger.warning("Locale 'es_ES.UTF-8' no encontrado, usando default.")
+
+    if not os.path.exists(names_surnames_csv):
+        logger.error(f"Archivo de nombres no encontrado: {names_surnames_csv}")
+        raise FileNotFoundError(f"No se encontró {names_surnames_csv}.")
+        
+    names_surnames = pd.read_csv(names_surnames_csv, encoding='utf-8')
+    carreras_list = db_connector.get_carreras()
+
+    if not carreras_list:
+        logger.error("La lista de carreras está vacía. Abortando.")
+        raise ValueError("No se pudieron obtener carreras de la base de datos.")
+
     data = []
+    entry_years = [random.randint(1974, datetime.now().year - 4) for _ in range(num_records)]
+    
     for i in range(num_records):
         person = names_surnames.iloc[i % len(names_surnames)]
-        nombre = person['nombre']
-        paterno = person['paterno']
-        materno = person['materno']
+        nombre_completo = f"{person['nombre']} {person['paterno']} {person['materno']}".strip()
+        year_suffix = str(entry_years[i])[-2:]
+        matricula = f"{year_suffix}30{random.randint(0, 9999):04d}"
+        if random.random() < 0.01: matricula = f"C{matricula}"
         
-        matricula = generate_matricula(years[i], add_c_prefix=random.random() < 0.5)
+        start_date = datetime(entry_years[i] + random.randint(3, 4), random.randint(1, 12), random.randint(1, 28))
+        end_date = start_date + timedelta(days=180)
+        servicio = f"{start_date.strftime('%d de %B de %Y').upper()} AL {end_date.strftime('%d de %B de %Y').upper()}"
         
-        carrera = random.choice(carreras)[0]
-        servicio = generar_servicio()
-        
-        # Validar datos
-        if all([matricula, nombre, paterno, materno, carrera, servicio]) and ',' not in servicio:
-            data.append({
-                'matricula': matricula,
-                'nombre': nombre,
-                'paterno': paterno,
-                'materno': materno,
-                'carrera': carrera,
-                'servicio': servicio
-            })
-        else:
-            logger.warning(f"Datos incompletos o inválidos en registro {i}. Saltando.")
-    
-    if len(data) < num_records:
-        logger.error(f"Solo se generaron {len(data)} registros válidos de {num_records} solicitados.")
-        raise ValueError(f"No se generaron suficientes registros válidos.")
+        data.append({
+            'matricula': matricula,
+            'nombre_completo': nombre_completo,
+            'carrera': random.choice(carreras_list),
+            'servicio': servicio
+        })
     
     df = pd.DataFrame(data)
-    with open(OUTPUT_CSV, 'w', encoding='utf-8', newline='\n') as f:
-        df.to_csv(f, index=False, lineterminator='\n')
-    logger.info(f"Generados {num_records} registros en {OUTPUT_CSV}")
-    with open(OUTPUT_CSV, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-        logger.info(f"Total de líneas en {OUTPUT_CSV}: {len(lines)}")
-        logger.info(f"Primeras 5 líneas: {lines[:5]}")
+    df.to_csv(output_csv, index=False, encoding='utf-8', lineterminator='\n')
+    logger.info(f"Generados {len(df)} registros en {output_csv}")
+    print(f"-> Archivo 'datos_prueba.csv' generado con {len(df)} registros.")
 
+# --- Bloque de Ejecución Independiente ---
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Genera datos de prueba.")
-    parser.add_argument("--num_records", type=int, default=2500, help="Número de registros a generar")
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    
+    parser = argparse.ArgumentParser(description="Genera datos de prueba para el procesamiento de documentos.")
+    parser.add_argument("--num_records", type=int, default=10000, help="Número de registros a generar")
     args = parser.parse_args()
     
+    db_connector = DBConnector()
+
     try:
-        generate_test_data(args.num_records)
+        print(f"Conectando a la base de datos...")
+        db_connector.connect()
+        print(f"Generando {args.num_records} registros de prueba...")
+        generate_test_data(args.num_records, db_connector)
+        print("¡Datos de prueba generados exitosamente!")
     except Exception as e:
-        logging.error(f"Error en generate_test_data: {str(e)}")
-        raise
+        logging.error(f"Error fatal en la ejecución: {e}", exc_info=True)
+        print(f"ERROR: {e}")
+    finally:
+        db_connector.close()
