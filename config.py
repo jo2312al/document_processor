@@ -1,11 +1,14 @@
 import os
 import platform
 
-# Detectar sistema operativo
+
 IS_WINDOWS = platform.system() == "Windows"
 
-# Rutas base
-BASE_DIR = r"C:\python\document_processor" if IS_WINDOWS else "/home/user/document_processor"
+BASE_DIR = os.getenv(
+    "DOCUMENT_PROCESSOR_BASE_DIR",
+    r"C:\python\document_processor" if IS_WINDOWS else os.path.dirname(os.path.abspath(__file__)),
+)
+
 DATA_DIR = os.path.join(BASE_DIR, "data")
 GENERATED_DOCS_DIR = os.path.join(BASE_DIR, "generated_docs")
 GENERATED_IMAGES_DIR = os.path.join(BASE_DIR, "generated_images")
@@ -19,10 +22,17 @@ MODELS_DIR = os.path.join(BASE_DIR, "models")
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
 FONTS_DIR = os.path.join(BASE_DIR, "fonts")
 
-# Rutas de herramientas
-TESSERACT_CMD = r"C:\Program Files\Tesseract-OCR\tesseract.exe" if IS_WINDOWS else "/usr/bin/tesseract"
-POPPLER_PATH = r"C:\Program Files\Poppler\Library\bin" if IS_WINDOWS else "/usr/bin"
+TESSERACT_CMD = os.getenv(
+    "TESSERACT_CMD",
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe" if IS_WINDOWS else "/usr/bin/tesseract",
+)
+POPPLER_PATH = os.getenv(
+    "POPPLER_PATH",
+    r"C:\Program Files\Poppler\Library\bin" if IS_WINDOWS else "/usr/bin",
+)
 
-# Configuración de logging
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
-LOGGING_LEVEL = "INFO"
+LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO")
+
+for directory in [LOGS_DIR, UPLOADS_DIR]:
+    os.makedirs(directory, exist_ok=True)
