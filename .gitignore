@@ -1,4 +1,4 @@
-# Archivos y directorios generados
+# Generated directories
 /converted_pdfs/
 /generated_docs/
 /generated_images/
@@ -6,34 +6,41 @@
 /labels/
 /datasets/
 /logs/
+/uploads/
+/__pycache__/
 
-# Archivos de datos sensibles
-/data/datos_prueba.csv
-/data/nombres_apellidos.csv
-/data/apellidos-20.csv
-/data/apellidos.csv
-/data/hombres.csv
-/data/mujeres.csv
+# Local/sensitive data
+/data/
+/datos_prueba.csv
 
-# Archivos de salida y temporales
+# Generated outputs and temporary files
 /output.json
 /extracted_text.txt
 /extracted_text_ocr.txt
 /processed_image_0.png
+*.docx
+*.pdf
+*.png
+!img/*.png
+!img/*.webp
 
-# Modelos entrenados
+# Trained/local models
 /models/
-
-# Archivos de caché de Python
-__pycache__/
-*.pyc
-
-# Archivos de modelo preentrenado
+/modelo/
 /yolov8n.pt
 
-# Directorios vacíos o no esenciales
-/fonts/
-/uploads/
+# Python cache and environments
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
 
-# Archivos de log
+# Nonessential local assets
+/fonts/
+
+# Logs
 *.log
+
+# Scripts used only to generate the residency report/documents
+/tools/
