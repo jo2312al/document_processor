@@ -1,0 +1,31 @@
+name: Deploy to Azure VM
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AZURE_VM_SSH_KEY }}" > ~/.ssh/azure_vm_key
+          chmod 600 ~/.ssh/azure_vm_key
+          ssh-keyscan -H "${{ secrets.AZURE_VM_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy application
+        run: |
+          ssh -i ~/.ssh/azure_vm_key "${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}" <<'REMOTE'
+            set -e
+            cd "/home/${USER}/document_processor"
+            git pull --ff-only origin main
+            . .venv/bin/activate
+            pip install -r requirements-deploy.txt
+            sudo systemctl restart document-processor
+            sudo systemctl --no-pager --full status document-processor
+          REMOTE

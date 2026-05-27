@@ -173,3 +173,37 @@ source .venv/bin/activate
 pip install -r requirements-deploy.txt
 sudo systemctl restart document-processor
 ```
+
+## 11. Deploy automatico con GitHub Actions
+
+El workflow `.github/workflows/deploy-azure-vm.yml` despliega automaticamente cuando se hace push a `main`.
+
+Configurar estos secretos en GitHub:
+
+```text
+AZURE_VM_HOST=52.186.173.159
+AZURE_VM_USER=azureuser
+AZURE_VM_SSH_KEY=<contenido completo de machine_key.pem>
+```
+
+Ruta en GitHub:
+
+```text
+Settings -> Secrets and variables -> Actions -> New repository secret
+```
+
+Para obtener el contenido de la llave en Windows:
+
+```powershell
+Get-Content C:\Users\jomej\Downloads\machine_key.pem -Raw
+```
+
+El deploy automatico hace:
+
+```bash
+cd /home/$USER/document_processor
+git pull --ff-only origin main
+source .venv/bin/activate
+pip install -r requirements-deploy.txt
+sudo systemctl restart document-processor
+```
