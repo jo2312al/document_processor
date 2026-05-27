@@ -20,7 +20,11 @@ except ImportError:
 # --- CLASE PARA LA CONEXIÓN A LA BASE DE DATOS ---
 class DBConnector:
     """Maneja la conexión a la base de datos MySQL."""
-    def __init__(self, host='localhost', user='root', password='2312', database='servicio'):
+    def __init__(self, host=None, user=None, password=None, database=None):
+        host = host or os.getenv("MYSQL_HOST", "localhost")
+        user = user or os.getenv("MYSQL_USER", "root")
+        password = password if password is not None else os.getenv("MYSQL_PASSWORD", "2312")
+        database = database or os.getenv("MYSQL_DATABASE", "servicio")
         self.config = {'host': host, 'user': user, 'password': password, 'database': database}
         self.connection = None
         self.logger = logging.getLogger("pipeline.db_connector")
@@ -60,12 +64,16 @@ class DBConnector:
             return []
 
 # --- FUNCIÓN PRINCIPAL DE GENERACIÓN DE DATOS ---
-def generate_test_data(num_records, db_connector):
+def generate_test_data(num_records, db_connector=None):
     """
     Genera el archivo CSV 'datos_prueba.csv' con una columna 'nombre_completo'
     y usando la lista de carreras de la BBDD.
     """
     logger = logging.getLogger("pipeline.generate_test_data")
+    owns_connector = db_connector is None
+    if db_connector is None:
+        db_connector = DBConnector()
+        db_connector.connect()
     output_csv = os.path.join(DATA_DIR, 'datos_prueba.csv')
     names_surnames_csv = os.path.join(DATA_DIR, 'nombres_apellidos.csv')
     
@@ -83,7 +91,11 @@ def generate_test_data(num_records, db_connector):
         raise FileNotFoundError(f"No se encontró {names_surnames_csv}.")
         
     names_surnames = pd.read_csv(names_surnames_csv, encoding='utf-8')
-    carreras_list = db_connector.get_carreras()
+    try:
+        carreras_list = db_connector.get_carreras()
+    finally:
+        if owns_connector:
+            db_connector.close()
 
     if not carreras_list:
         logger.error("La lista de carreras está vacía. Abortando.")

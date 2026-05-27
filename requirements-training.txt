@@ -1,0 +1,7 @@
+pandas==2.2.3
+fpdf==1.7.2
+tqdm==4.67.3
+mysql-connector-python==8.0.33
+thefuzz==0.22.1
+python-Levenshtein==0.27.1
+albumentations==1.4.24
