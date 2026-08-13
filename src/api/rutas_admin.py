@@ -1,4 +1,4 @@
-﻿from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
 from src.api.archivos import eliminar_si_existe, guardar_pdf_temporal, validar_pdf_subido
 from src.api.autenticacion import solicitud_admin_no_autorizada
@@ -16,6 +16,10 @@ from src.services.gestor_entrenamiento_documentos import (
 from src.services.gestor_lotes_aprendizaje import (
     LoteAprendizajeNoEncontrado,
     listar_lotes_aprendizaje,
+)
+from src.services.gestor_plantillas_documento import (
+    PlantillaDocumentoInvalida,
+    crear_plantilla_desde_pdf,
 )
 from src.services.gestor_preprocesamiento_documental import extraer_texto_documento
 from src.services.gestor_tipos_documento import (
@@ -75,6 +79,15 @@ def subir_documento_entrenamiento(id_tipo_documento):
     if error_archivo:
         return respuesta_error(error_archivo, 400)
     return _crear_documento_desde_pdf(id_tipo_documento, archivo)
+
+
+@rutas_admin.route("/tipos-documento/<id_tipo_documento>/plantillas", methods=["POST"])
+def crear_plantilla_documento(id_tipo_documento):
+    archivo = request.files.get("file")
+    error_archivo = validar_pdf_subido(archivo)
+    if error_archivo:
+        return respuesta_error(error_archivo, 400)
+    return _crear_plantilla_desde_pdf(id_tipo_documento, archivo)
 
 
 @rutas_admin.route("/documentos-entrenamiento/<id_documento>/anotaciones", methods=["POST"])
@@ -146,6 +159,25 @@ def _crear_documento_desde_pdf(id_tipo_documento, archivo):
         return respuesta_error(error, 400)
     finally:
         eliminar_si_existe(ruta_pdf)
+
+
+def _crear_plantilla_desde_pdf(id_tipo_documento, archivo):
+    ruta_pdf, _ = guardar_pdf_temporal(archivo, current_app.config["UPLOAD_FOLDER"], "plantilla")
+    try:
+        datos = _leer_datos_plantilla()
+        plantilla = crear_plantilla_desde_pdf(id_tipo_documento, ruta_pdf, datos)
+        return respuesta_json("plantilla", plantilla, 201)
+    except (CatalogoDocumentoInvalido, PlantillaDocumentoInvalida, ValueError) as error:
+        return respuesta_error(error, 400)
+    finally:
+        eliminar_si_existe(ruta_pdf)
+
+
+def _leer_datos_plantilla():
+    return {
+        "nombre_plantilla": request.form.get("nombre_plantilla"),
+        "campos_muestra": request.form.get("campos_muestra"),
+    }
 
 
 def _extraer_texto_entrenamiento(ruta_pdf):

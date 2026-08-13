@@ -116,6 +116,8 @@ def _serializar_tipo_documento(tipo):
         "campos": tipo.get("campos", []),
         "rasgos_documento": tipo.get("rasgos_documento", {}),
         "versiones_modelo": tipo.get("versiones_modelo", []),
+        "total_plantillas": len(tipo.get("plantillas", [])),
+        "tiene_plantilla_activa": bool(tipo.get("plantilla_activa")),
     }
 
 
