@@ -1,4 +1,4 @@
-name: Deploy to Azure VM
+﻿name: Deploy to Azure VM
 
 on:
   push:
@@ -26,6 +26,9 @@ jobs:
             git pull --ff-only origin main
             . .venv/bin/activate
             pip install -r requirements-deploy.txt
+            sudo systemctl restart redis || sudo systemctl restart redis-server || true
             sudo systemctl restart document-processor
+            sudo systemctl restart document-processor-worker
             sudo systemctl --no-pager --full status document-processor
+            sudo systemctl --no-pager --full status document-processor-worker
           REMOTE

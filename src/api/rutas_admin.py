@@ -3,18 +3,19 @@
 from src.api.archivos import eliminar_si_existe, guardar_pdf_temporal, validar_pdf_subido
 from src.api.autenticacion import solicitud_admin_no_autorizada
 from src.api.respuestas import respuesta_error, respuesta_json, respuesta_lista
+from src.services.despachador_tareas import despachar_entrenamiento_lote
 from src.services.gestor_aprendizaje_activo import listar_eventos_revision
-from src.services.gestor_api_keys import (
-    ApiKeySolicitudInvalida,
-    generar_api_key,
-    listar_api_keys,
-)
+from src.services.gestor_api_keys import ApiKeySolicitudInvalida, generar_api_key, listar_api_keys
 from src.services.gestor_entrenamiento_documentos import (
     DocumentoEntrenamientoInvalido,
     DocumentoEntrenamientoNoEncontrado,
     agregar_anotacion_entrenamiento,
     crear_documento_entrenamiento,
     listar_documentos_entrenamiento,
+)
+from src.services.gestor_lotes_aprendizaje import (
+    LoteAprendizajeNoEncontrado,
+    listar_lotes_aprendizaje,
 )
 from src.services.gestor_preprocesamiento_documental import extraer_texto_documento
 from src.services.gestor_tipos_documento import (
@@ -59,14 +60,12 @@ def comparar_modelo_documento(id_tipo_documento):
 
 @rutas_admin.route("/tipos-documento/<id_tipo_documento>/documentos-entrenamiento", methods=["GET"])
 def obtener_documentos_entrenamiento(id_tipo_documento):
-    documentos = listar_documentos_entrenamiento(id_tipo_documento)
-    return respuesta_lista("documentos_entrenamiento", documentos)
+    return respuesta_lista("documentos_entrenamiento", listar_documentos_entrenamiento(id_tipo_documento))
 
 
 @rutas_admin.route("/tipos-documento/<id_tipo_documento>/aprendizaje-activo", methods=["GET"])
 def obtener_eventos_aprendizaje_activo(id_tipo_documento):
-    eventos = listar_eventos_revision(id_tipo_documento)
-    return respuesta_lista("eventos_revision", eventos)
+    return respuesta_lista("eventos_revision", listar_eventos_revision(id_tipo_documento))
 
 
 @rutas_admin.route("/tipos-documento/<id_tipo_documento>/documentos-entrenamiento", methods=["POST"])
@@ -80,8 +79,7 @@ def subir_documento_entrenamiento(id_tipo_documento):
 
 @rutas_admin.route("/documentos-entrenamiento/<id_documento>/anotaciones", methods=["POST"])
 def registrar_anotacion_documento(id_documento):
-    datos = request.get_json(silent=True) or {}
-    return _registrar_anotacion(id_documento, datos)
+    return _registrar_anotacion(id_documento, request.get_json(silent=True) or {})
 
 
 @rutas_admin.route("/api-keys", methods=["GET"])
@@ -98,18 +96,32 @@ def crear_api_key():
         return respuesta_error(error, 400)
 
 
+@rutas_admin.route("/aprendizaje/lotes", methods=["GET"])
+def obtener_lotes_aprendizaje():
+    id_tipo = request.args.get("id_tipo_documento")
+    return respuesta_json("aprendizaje", listar_lotes_aprendizaje(id_tipo))
+
+
+@rutas_admin.route("/aprendizaje/lotes/<id_lote>/entrenar", methods=["POST"])
+def entrenar_lote_manual(id_lote):
+    try:
+        return respuesta_json("entrenamiento", despachar_entrenamiento_lote(id_lote), 202)
+    except LoteAprendizajeNoEncontrado as error:
+        return respuesta_error(error, 404)
+    except Exception as error:
+        return respuesta_error(error, 500)
+
+
 def _ejecutar_creacion(funcion_servicio, clave_respuesta):
     try:
-        datos = request.get_json(silent=True) or {}
-        return respuesta_json(clave_respuesta, funcion_servicio(datos), 201)
+        return respuesta_json(clave_respuesta, funcion_servicio(request.get_json(silent=True) or {}), 201)
     except CatalogoDocumentoInvalido as error:
         return respuesta_error(error, 400)
 
 
 def _ejecutar_con_tipo(funcion_servicio, id_tipo_documento, clave_respuesta):
     try:
-        datos = request.get_json(silent=True) or {}
-        resultado = funcion_servicio(id_tipo_documento, datos)
+        resultado = funcion_servicio(id_tipo_documento, request.get_json(silent=True) or {})
         return respuesta_json(clave_respuesta, resultado, 201)
     except TipoDocumentoNoEncontrado as error:
         return respuesta_error(error, 404)
@@ -119,8 +131,7 @@ def _ejecutar_con_tipo(funcion_servicio, id_tipo_documento, clave_respuesta):
 
 def _comparar_modelos(id_tipo_documento, nombre_modelo):
     try:
-        comparacion = comparar_versiones_modelo(id_tipo_documento, nombre_modelo)
-        return respuesta_json("comparacion", comparacion)
+        return respuesta_json("comparacion", comparar_versiones_modelo(id_tipo_documento, nombre_modelo))
     except Exception as error:
         return respuesta_error(error, 400)
 
@@ -133,9 +144,6 @@ def _crear_documento_desde_pdf(id_tipo_documento, archivo):
         return respuesta_json("documento_entrenamiento", documento, 201)
     except DocumentoEntrenamientoInvalido as error:
         return respuesta_error(error, 400)
-    except Exception as error:
-        current_app.logger.error("Error subiendo documento de entrenamiento: %s", error)
-        return respuesta_error(error, 500)
     finally:
         eliminar_si_existe(ruta_pdf)
 
@@ -147,8 +155,7 @@ def _extraer_texto_entrenamiento(ruta_pdf):
 
 def _registrar_anotacion(id_documento, datos):
     try:
-        anotacion = agregar_anotacion_entrenamiento(id_documento, datos)
-        return respuesta_json("anotacion", anotacion, 201)
+        return respuesta_json("anotacion", agregar_anotacion_entrenamiento(id_documento, datos), 201)
     except DocumentoEntrenamientoNoEncontrado as error:
         return respuesta_error(error, 404)
     except DocumentoEntrenamientoInvalido as error:

@@ -1,9 +1,18 @@
-﻿from flask import Blueprint, current_app, jsonify, render_template, request
+﻿import json
+
+from flask import Blueprint, current_app, jsonify, render_template, request
 
 from src.api.archivos import eliminar_si_existe, guardar_pdf_temporal, validar_pdf_subido
 from src.api.autenticacion import solicitud_cliente_no_autorizada
 from src.api.respuestas import respuesta_error
 from src.processors.predict import predecir_entidades
+from src.services.despachador_tareas import despachar_entrenamiento_lote
+from src.services.gestor_lotes_aprendizaje import (
+    DocumentoValidadoInvalido,
+    lote_listo_para_entrenar,
+    registrar_documento_validado,
+)
+from src.services.gestor_preprocesamiento_documental import extraer_texto_documento
 from src.services.gestor_tipos_documento import listar_tipos_documento
 
 rutas_publicas = Blueprint("rutas_publicas", __name__)
@@ -24,13 +33,67 @@ def extraer_datos_pdf():
     error_autorizacion = solicitud_cliente_no_autorizada()
     if error_autorizacion:
         return error_autorizacion
-
     archivo = request.files.get("file")
     error_archivo = validar_pdf_subido(archivo)
     if error_archivo:
         return respuesta_error(error_archivo, 400)
-
     return _procesar_pdf_subido(archivo)
+
+
+@rutas_publicas.route("/aprendizaje/documentos-validados", methods=["POST"])
+def recibir_documento_validado():
+    error_autorizacion = solicitud_cliente_no_autorizada()
+    if error_autorizacion:
+        return error_autorizacion
+    archivo = request.files.get("file")
+    error_archivo = validar_pdf_subido(archivo)
+    if error_archivo:
+        return respuesta_error(error_archivo, 400)
+    return _registrar_pdf_validado(archivo)
+
+
+def _registrar_pdf_validado(archivo):
+    ruta_pdf, nombre_archivo = guardar_pdf_temporal(archivo, current_app.config["UPLOAD_FOLDER"], "validado")
+    try:
+        documento, lote = _crear_documento_validado(ruta_pdf, nombre_archivo)
+        despacho = _despachar_si_lote_listo(lote)
+        return jsonify(_respuesta_documento_validado(documento, lote, despacho)), 201
+    except DocumentoValidadoInvalido as error:
+        return respuesta_error(error, 400)
+    finally:
+        eliminar_si_existe(ruta_pdf)
+
+
+def _crear_documento_validado(ruta_pdf, nombre_archivo):
+    id_tipo = request.form.get("id_tipo_documento", "constancia_servicio")
+    campos = _leer_campos_validados()
+    texto_ocr = extraer_texto_documento(ruta_pdf).get("texto", "")
+    return registrar_documento_validado(id_tipo, ruta_pdf, nombre_archivo, campos, texto_ocr)
+
+
+def _leer_campos_validados():
+    texto = request.form.get("campos_validados") or request.form.get("fields") or "{}"
+    try:
+        return json.loads(texto)
+    except json.JSONDecodeError as error:
+        raise DocumentoValidadoInvalido(f"campos_validados no es JSON valido: {error}")
+
+
+def _despachar_si_lote_listo(lote):
+    if lote_listo_para_entrenar(lote):
+        return despachar_entrenamiento_lote(lote["id_lote"])
+    return None
+
+
+def _respuesta_documento_validado(documento, lote, despacho):
+    return {
+        "mensaje": "Documento validado recibido",
+        "estado": "registrado_para_entrenamiento",
+        "id_documento_validado": documento["id_documento_validado"],
+        "id_lote": lote["id_lote"],
+        "estado_lote": lote["estado"],
+        "entrenamiento": despacho,
+    }
 
 
 def _serializar_tipos_documento():
@@ -53,8 +116,7 @@ def _serializar_tipo_documento(tipo):
 def _procesar_pdf_subido(archivo):
     ruta_pdf, _ = guardar_pdf_temporal(archivo, current_app.config["UPLOAD_FOLDER"], "extract")
     try:
-        resultado = _extraer_con_modelo(ruta_pdf)
-        return jsonify(resultado), 200
+        return jsonify(_extraer_con_modelo(ruta_pdf)), 200
     except Exception as error:
         current_app.logger.error("Error procesando PDF: %s", error)
         return respuesta_error(error, 500)

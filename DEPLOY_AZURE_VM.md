@@ -207,3 +207,53 @@ source .venv/bin/activate
 pip install -r requirements-deploy.txt
 sudo systemctl restart document-processor
 ```
+
+## 12. Worker de aprendizaje con Redis y Celery
+
+Instalar Redis en la VM:
+
+```bash
+sudo apt install -y redis-server
+sudo systemctl enable redis-server || sudo systemctl enable redis
+sudo systemctl start redis-server || sudo systemctl start redis
+```
+
+Crear servicio del worker:
+
+```bash
+sudo nano /etc/systemd/system/document-processor-worker.service
+```
+
+Contenido:
+
+```ini
+[Unit]
+Description=Document Processor Celery Worker
+After=network.target redis-server.service redis.service
+
+[Service]
+User=<usuario>
+WorkingDirectory=/home/<usuario>/document_processor
+Environment="DOCUMENT_PROCESSOR_BASE_DIR=/home/<usuario>/document_processor"
+Environment="TESSERACT_CMD=/usr/bin/tesseract"
+Environment="POPPLER_PATH=/usr/bin"
+Environment="CELERY_BROKER_URL=redis://localhost:6379/0"
+Environment="CELERY_RESULT_BACKEND=redis://localhost:6379/1"
+ExecStart=/home/<usuario>/document_processor/.venv/bin/celery -A src.jobs.celery_app.celery_app worker --loglevel=INFO --concurrency=1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Activar:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable document-processor-worker
+sudo systemctl start document-processor-worker
+sudo systemctl status document-processor-worker
+```
+
+El endpoint `/aprendizaje/documentos-validados` acumula documentos corregidos por el sistema externo. Cuando el lote alcanza el umbral configurado, se encola el entrenamiento en Celery. El panel admin permite entrenar manualmente el lote para demo academica.

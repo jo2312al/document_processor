@@ -46,3 +46,7 @@ venv/
 !/tools/
 /tools/*
 !/tools/pipeline_docling_100.py
+
+# Local Codex/agent skills
+/.agents/
+/skills-lock.json
