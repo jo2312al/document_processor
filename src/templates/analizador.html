@@ -1,0 +1,112 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador de documentos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900 p-4">
+    <main class="mx-auto grid max-w-7xl gap-5 lg:grid-cols-2">
+        <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <h1 class="mb-4 text-xl font-bold text-blue-800">Documento original</h1>
+            <div class="relative flex h-[75vh] items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-slate-300 bg-slate-50">
+                <div id="pdf-placeholder" class="p-6 text-center text-slate-500">
+                    <p>Selecciona un PDF para previsualizarlo.</p>
+                </div>
+                <iframe id="pdf-frame" class="hidden h-full w-full" src=""></iframe>
+            </div>
+        </section>
+
+        <section class="flex h-full flex-col rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 class="mb-4 text-xl font-bold text-blue-800">Extracción de datos</h2>
+            <form id="upload-form" class="mb-5 grid gap-4">
+                <label class="grid gap-2 text-sm font-semibold text-slate-700">Tipo de documento
+                    <select id="tipo-documento" name="id_tipo_documento" class="rounded-md border border-slate-300 px-3 py-2"></select>
+                </label>
+                <label class="grid gap-2 text-sm font-semibold text-slate-700">Archivo PDF
+                    <input id="pdf-file" name="file" type="file" accept=".pdf" class="rounded-md border border-slate-300 px-3 py-2">
+                </label>
+                <button id="submit-btn" type="submit" class="rounded-md bg-emerald-700 px-4 py-2 font-bold text-white hover:bg-emerald-800">Analizar documento</button>
+            </form>
+            <div id="loader" class="hidden py-4 text-blue-700">Procesando documento...</div>
+            <pre id="results-pre" class="min-h-0 flex-1 overflow-auto rounded-md bg-slate-950 p-4 text-sm text-emerald-300"></pre>
+        </section>
+    </main>
+
+    <script>
+        const archivoPdf = document.getElementById('pdf-file');
+        const visorPdf = document.getElementById('pdf-frame');
+        const marcadorPdf = document.getElementById('pdf-placeholder');
+        const formulario = document.getElementById('upload-form');
+        const cargando = document.getElementById('loader');
+        const resultado = document.getElementById('results-pre');
+        const tipoDocumento = document.getElementById('tipo-documento');
+
+        async function cargarTiposDocumento() {
+            const respuesta = await fetch('/tipos-documento');
+            const datos = await respuesta.json();
+            tipoDocumento.innerHTML = '';
+            datos.tipos_documento.forEach(agregarOpcionDocumento);
+        }
+
+        function agregarOpcionDocumento(tipo) {
+            const opcion = document.createElement('option');
+            opcion.value = tipo.id_tipo_documento;
+            opcion.textContent = tipo.nombre;
+            tipoDocumento.appendChild(opcion);
+        }
+
+        function mostrarPdfSeleccionado() {
+            if (!archivoPdf.files.length) return;
+            visorPdf.src = URL.createObjectURL(archivoPdf.files[0]);
+            visorPdf.classList.remove('hidden');
+            marcadorPdf.classList.add('hidden');
+        }
+
+        async function enviarDocumento(evento) {
+            evento.preventDefault();
+            if (!archivoPdf.files.length) return alert('Selecciona un archivo PDF.');
+            await procesarDocumento();
+        }
+
+        async function procesarDocumento() {
+            activarCarga();
+            try {
+                const datos = await solicitarExtraccion();
+                mostrarResultado(datos, false);
+            } catch (error) {
+                mostrarResultado({ error: error.message }, true);
+            } finally {
+                cargando.classList.add('hidden');
+            }
+        }
+
+        async function solicitarExtraccion() {
+            const datosFormulario = new FormData();
+            datosFormulario.append('file', archivoPdf.files[0]);
+            datosFormulario.append('id_tipo_documento', tipoDocumento.value);
+            const respuesta = await fetch('/extract', { method: 'POST', body: datosFormulario });
+            const datos = await respuesta.json();
+            if (!respuesta.ok) throw new Error(datos.error || 'Error desconocido');
+            return datos;
+        }
+
+        function activarCarga() {
+            cargando.classList.remove('hidden');
+            resultado.textContent = '';
+        }
+
+        function mostrarResultado(datos, esError) {
+            resultado.className = esError
+                ? 'min-h-0 flex-1 overflow-auto rounded-md bg-slate-950 p-4 text-sm text-red-300'
+                : 'min-h-0 flex-1 overflow-auto rounded-md bg-slate-950 p-4 text-sm text-emerald-300';
+            resultado.textContent = JSON.stringify(datos, null, 2);
+        }
+
+        archivoPdf.addEventListener('change', mostrarPdfSeleccionado);
+        formulario.addEventListener('submit', enviarDocumento);
+        cargarTiposDocumento().catch(() => agregarOpcionDocumento({ id_tipo_documento: 'constancia_servicio', nombre: 'Constancia de servicio' }));
+    </script>
+</body>
+</html>

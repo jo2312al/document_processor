@@ -1,183 +1,240 @@
-import pandas as pd
-from fpdf import FPDF
+﻿import argparse
+import json
+import logging
 import os
 import random
-import logging
-import json
 import sys
-import shutil
-import argparse
-from datetime import datetime
-from tqdm import tqdm
-from PIL import Image
 import tempfile
+from datetime import datetime
 
-# --- Configuración de rutas ---
-# Asegura que el script pueda encontrar el archivo de configuración
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+import pandas as pd
+from fpdf import FPDF
+from PIL import Image
+from tqdm import tqdm
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 try:
-    from config import DATA_DIR, GENERATED_DOCS_DIR, LABELS_DIR, BASE_DIR
+    from config import BASE_DIR, DATA_DIR, GENERATED_DOCS_DIR, LABELS_DIR
 except ImportError:
-    # Definir rutas por defecto si config.py no está disponible
-    BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     DATA_DIR = os.path.join(BASE_DIR, "data")
     GENERATED_DOCS_DIR = os.path.join(BASE_DIR, "generated_docs")
     LABELS_DIR = os.path.join(BASE_DIR, "labels")
 
 
-class PDFGenerator:
-    def __init__(self, output_dir, labels_dir, img_dir):
-        self.output_dir = output_dir
-        self.labels_dir = labels_dir
-        self.img_dir = img_dir
-        self.logger = logging.getLogger("pipeline.pdf_generator")
+class GeneradorPDF:
+    def __init__(self, carpeta_salida, carpeta_etiquetas, carpeta_imagenes):
+        self.carpeta_salida = carpeta_salida
+        self.carpeta_etiquetas = carpeta_etiquetas
+        self.carpeta_imagenes = carpeta_imagenes
+        self.registrador = logging.getLogger("pipeline.generador_pdf")
+
+    def limpiar_directorios(self):
+        crear_directorio(self.carpeta_salida)
+        crear_directorio(self.carpeta_etiquetas)
+        eliminar_por_extension(self.carpeta_salida, ".pdf")
+        eliminar_por_extension(self.carpeta_etiquetas, ".json")
+
+    def generar_pdf_y_etiqueta(self, fila, indice, tipo_pdf):
+        pdf = crear_pdf_base()
+        escribir_formato_oficial(pdf, fila, self.carpeta_imagenes, self.registrador)
+        ruta_pdf, matricula = guardar_pdf(pdf, fila, indice, tipo_pdf, self.carpeta_salida)
+        guardar_etiqueta(fila, matricula, indice, tipo_pdf, pdf, self.carpeta_etiquetas)
+        return ruta_pdf
 
     def clear_directories(self):
-        """Limpia solo archivos generados por el pipeline, no reportes DOCX."""
-        self.logger.info("Limpiando PDFs generados y etiquetas del pipeline...")
-        os.makedirs(self.output_dir, exist_ok=True)
-        os.makedirs(self.labels_dir, exist_ok=True)
-        self._remove_files_by_extension(self.output_dir, ".pdf")
-        self._remove_files_by_extension(self.labels_dir, ".json")
-
-    def _remove_files_by_extension(self, directory, extension):
-        for file_name in os.listdir(directory):
-            if file_name.lower().endswith(extension):
-                os.remove(os.path.join(directory, file_name))
-
-    def _embed_image(self, pdf, image_path, x, y, w=0, h=0):
-        """Inserta una imagen en el PDF, convirtiendo formatos si es necesario."""
-        if not os.path.exists(image_path):
-            self.logger.warning(f"No se encontró la imagen en: {image_path}")
-            return
-        
-        # Lógica para manejar imágenes .webp (sin cambios)
-        temp_image_path = None
-        try:
-            path_to_use = image_path
-            if image_path.lower().endswith('.webp'):
-                img = Image.open(image_path).convert("RGB")
-                temp_fd, temp_image_path = tempfile.mkstemp(suffix=".png")
-                os.close(temp_fd)
-                img.save(temp_image_path, 'PNG')
-                path_to_use = temp_image_path
-            
-            pdf.image(path_to_use, x=x, y=y, w=w, h=h)
-        except Exception as e:
-            self.logger.error(f"FPDF no pudo insertar la imagen {image_path}: {e}")
-        finally:
-            if temp_image_path and os.path.exists(temp_image_path):
-                os.remove(temp_image_path)
-
-    def generate_formato_oficial(self, pdf, row):
-        """Genera el contenido del PDF usando la fila de datos."""
-        # --- Lógica de logos sin cambios ---
-        logo_educacion_path = os.path.join(self.img_dir, 'tecnm.png')
-        logo_itvh_path = os.path.join(self.img_dir, 'itvh.png')
-        self._embed_image(pdf, logo_educacion_path, x=15, y=12, h=15)
-        self._embed_image(pdf, logo_itvh_path, x=165, y=12, h=15)
-        
-        # --- Lógica de texto sin cambios, excepto la variable del nombre ---
-        pdf.set_y(25)
-        pdf.set_font('Arial', '', 9)
-        pdf.cell(w=0, h=5, txt="Gestión Tecnológica y Vinculación", ln=True, align='C')
-        pdf.set_font('Arial', 'B', 9)
-        pdf.cell(w=0, h=5, txt=f"No. de oficio: SUBPLAN/GTV-SSL/{random.randint(1000, 9999)}/{datetime.now().year}", ln=True, align='C')
-        pdf.ln(10)
-        pdf.set_font('Arial', 'B', 10)
-        pdf.cell(w=0, h=8, txt="Asunto: CONSTANCIA DE LIBERACIÓN DE SERVICIO SOCIAL", ln=True, align='R')
-        pdf.ln(5)
-        pdf.set_font('Arial', '', 11)
-        pdf.multi_cell(w=0, h=6, txt="A QUIEN CORRESPONDA:", align='L')
-        pdf.ln(4)
-        
-        # --- CAMBIO CLAVE 1: Usar la columna 'nombre_completo' ---
-        # En lugar de combinar nombre, paterno y materno, leemos directamente la columna unificada.
-        full_name = row.get('nombre_completo', '[NOMBRE COMPLETO AUSENTE]').strip()
-        
-        texto_principal = (
-            f"Por medio de la presente se HACE CONSTAR que el/la C. {full_name}, "
-            f"con número de control {row.get('matricula', '[MATRÍCULA]')}, de la carrera de "
-            f"{row.get('carrera', '[CARRERA]')}, realizó su SERVICIO SOCIAL en el INSTITUTO TECNOLÓGICO "
-            f"DE VILLAHERMOSA, durante el período comprendido del {row.get('servicio', '[PERIODO]')}, "
-            f"obteniendo un nivel de desempeño Excelente."
-        )
-        pdf.multi_cell(w=0, h=7, txt=texto_principal)
-        pdf.ln(10)
-        pdf.set_font('Arial', 'B', 11)
-        pdf.cell(w=0, h=8, txt="ATENTAMENTE", ln=True, align='C')
-        pdf.ln(20)
-        pdf.cell(w=95, h=5, txt="_____________________________", align='C', ln=False)
-        pdf.cell(w=95, h=5, txt="_____________________________", align='C', ln=True)
+        self.limpiar_directorios()
 
     def generate_pdf_and_label(self, row, index, pdf_type):
-        """Genera un único PDF y su archivo de etiquetas JSON correspondiente."""
-        pdf = FPDF(orientation='P', unit='mm', format='A4')
-        pdf.add_page()
-        pdf.set_text_color(0, 0, 0)
-        
-        self.generate_formato_oficial(pdf, row)
-        
-        matricula_limpia = str(row['matricula']).lstrip('C')
-        output_filename = f"constancia_{matricula_limpia}_{index}_{pdf_type}.pdf"
-        output_path = os.path.join(self.output_dir, output_filename)
-        pdf.output(output_path)
+        return self.generar_pdf_y_etiqueta(row, index, pdf_type)
 
-        # --- CAMBIO CLAVE 2: Actualizar la estructura de las etiquetas ---
-        # Reflejamos la nueva estrategia en el archivo JSON. Solo guardamos 'NOMBRE_COMPLETO'.
-        labels = {
-            "fields": {
-                "alu_matricula": {"value": matricula_limpia},
-                "NOMBRE_COMPLETO": {"value": str(row['nombre_completo'])}, # <-- CAMBIO
-                "alu_carrera": {"value": str(row['carrera'])},
-                "alu_servicio": {"value": str(row['servicio'])}
-            },
-            "image_dimensions": {"width": int(pdf.w * pdf.k), "height": int(pdf.h * pdf.k)}
-        }
-        
-        label_filename = f"labels_constancia_{matricula_limpia}_{index}_{pdf_type}.json"
-        label_path = os.path.join(self.labels_dir, label_filename)
-        
-        with open(label_path, 'w', encoding='utf-8') as f:
-            json.dump(labels, f, ensure_ascii=False, indent=2)
+
+PDFGenerator = GeneradorPDF
+
+
+def ejecutar_generacion_pdfs(numero_registros):
+    registrador = logging.getLogger("pipeline.generador_pdf")
+    ruta_datos = validar_csv_datos()
+    generador = crear_generador_pdf()
+    generador.limpiar_directorios()
+    datos = preparar_datos_pdf(ruta_datos, numero_registros)
+    generar_lote_pdfs(generador, datos, registrador)
+
 
 def run_pdf_generation(num_records):
-    """Orquesta el proceso de generación de PDFs."""
-    logger = logging.getLogger("pipeline.pdf_generator")
-    # El script ahora depende del CSV con la columna 'nombre_completo'
-    data_file_path = os.path.join(DATA_DIR, 'datos_prueba.csv')
-    img_dir_path = os.path.join(BASE_DIR, 'img') # Directorio de imágenes
-    
-    if not os.path.exists(data_file_path):
-        logger.error(f"Archivo de datos no encontrado: {data_file_path}")
-        raise FileNotFoundError(f"No se encontró {data_file_path}. Ejecuta 'generate_test_data.py' primero.")
+    ejecutar_generacion_pdfs(num_records)
 
-    generator = PDFGenerator(output_dir=GENERATED_DOCS_DIR, labels_dir=LABELS_DIR, img_dir=img_dir_path)
-    generator.clear_directories()
-    
-    data = pd.read_csv(data_file_path, dtype={'matricula': str}).dropna()
-    if len(data) < num_records:
-        data = pd.concat([data] * (num_records // len(data) + 1), ignore_index=True)
-    
-    data_to_process = data.sample(n=num_records)
-    
-    for index, row in tqdm(data_to_process.iterrows(), total=len(data_to_process), desc="Generando PDFs"):
+
+def crear_directorio(ruta):
+    os.makedirs(ruta, exist_ok=True)
+
+
+def eliminar_por_extension(carpeta, extension):
+    for nombre_archivo in os.listdir(carpeta):
+        if nombre_archivo.lower().endswith(extension):
+            os.remove(os.path.join(carpeta, nombre_archivo))
+
+
+def crear_pdf_base():
+    pdf = FPDF(orientation="P", unit="mm", format="A4")
+    pdf.add_page()
+    pdf.set_text_color(0, 0, 0)
+    return pdf
+
+
+def escribir_formato_oficial(pdf, fila, carpeta_imagenes, registrador):
+    insertar_logos(pdf, carpeta_imagenes, registrador)
+    escribir_encabezado(pdf)
+    escribir_cuerpo(pdf, fila)
+    escribir_firmas(pdf)
+
+
+def insertar_logos(pdf, carpeta_imagenes, registrador):
+    insertar_imagen(pdf, os.path.join(carpeta_imagenes, "tecnm.png"), 15, 12, registrador, h=15)
+    insertar_imagen(pdf, os.path.join(carpeta_imagenes, "itvh.png"), 165, 12, registrador, h=15)
+
+
+def insertar_imagen(pdf, ruta_imagen, x, y, registrador, w=0, h=0):
+    if not os.path.exists(ruta_imagen):
+        registrador.warning("No se encontro la imagen: %s", ruta_imagen)
+        return
+    ruta_temporal = convertir_webp_si_aplica(ruta_imagen)
+    try:
+        pdf.image(ruta_temporal or ruta_imagen, x=x, y=y, w=w, h=h)
+    finally:
+        eliminar_temporal(ruta_temporal)
+
+
+def convertir_webp_si_aplica(ruta_imagen):
+    if not ruta_imagen.lower().endswith(".webp"):
+        return None
+    descriptor, ruta_temporal = tempfile.mkstemp(suffix=".png")
+    os.close(descriptor)
+    Image.open(ruta_imagen).convert("RGB").save(ruta_temporal, "PNG")
+    return ruta_temporal
+
+
+def eliminar_temporal(ruta_temporal):
+    if ruta_temporal and os.path.exists(ruta_temporal):
+        os.remove(ruta_temporal)
+
+
+def escribir_encabezado(pdf):
+    pdf.set_y(25)
+    pdf.set_font("Arial", "", 9)
+    pdf.cell(w=0, h=5, txt="Gestion Tecnologica y Vinculacion", ln=True, align="C")
+    pdf.set_font("Arial", "B", 9)
+    pdf.cell(w=0, h=5, txt=crear_numero_oficio(), ln=True, align="C")
+    pdf.ln(10)
+    pdf.set_font("Arial", "B", 10)
+    pdf.cell(w=0, h=8, txt="Asunto: CONSTANCIA DE LIBERACION DE SERVICIO SOCIAL", ln=True, align="R")
+
+
+def crear_numero_oficio():
+    return f"No. de oficio: SUBPLAN/GTV-SSL/{random.randint(1000, 9999)}/{datetime.now().year}"
+
+
+def escribir_cuerpo(pdf, fila):
+    pdf.ln(5)
+    pdf.set_font("Arial", "", 11)
+    pdf.multi_cell(w=0, h=6, txt="A QUIEN CORRESPONDA:", align="L")
+    pdf.ln(4)
+    pdf.multi_cell(w=0, h=7, txt=crear_texto_constancia(fila))
+
+
+def crear_texto_constancia(fila):
+    return (
+        f"Por medio de la presente se HACE CONSTAR que el/la C. {obtener_nombre(fila)}, "
+        f"con numero de control {fila.get('matricula', '[MATRICULA]')}, de la carrera de "
+        f"{fila.get('carrera', '[CARRERA]')}, realizo su SERVICIO SOCIAL en el INSTITUTO TECNOLOGICO "
+        f"DE VILLAHERMOSA, durante el periodo comprendido del {fila.get('servicio', '[PERIODO]')}, "
+        "obteniendo un nivel de desempeno Excelente."
+    )
+
+
+def obtener_nombre(fila):
+    return fila.get("nombre_completo", "[NOMBRE COMPLETO AUSENTE]").strip()
+
+
+def escribir_firmas(pdf):
+    pdf.ln(10)
+    pdf.set_font("Arial", "B", 11)
+    pdf.cell(w=0, h=8, txt="ATENTAMENTE", ln=True, align="C")
+    pdf.ln(20)
+    pdf.cell(w=95, h=5, txt="_____________________________", align="C", ln=False)
+    pdf.cell(w=95, h=5, txt="_____________________________", align="C", ln=True)
+
+
+def guardar_pdf(pdf, fila, indice, tipo_pdf, carpeta_salida):
+    matricula = str(fila["matricula"]).lstrip("C")
+    nombre_archivo = f"constancia_{matricula}_{indice}_{tipo_pdf}.pdf"
+    ruta_pdf = os.path.join(carpeta_salida, nombre_archivo)
+    pdf.output(ruta_pdf)
+    return ruta_pdf, matricula
+
+
+def guardar_etiqueta(fila, matricula, indice, tipo_pdf, pdf, carpeta_etiquetas):
+    ruta_etiqueta = os.path.join(carpeta_etiquetas, f"labels_constancia_{matricula}_{indice}_{tipo_pdf}.json")
+    with open(ruta_etiqueta, "w", encoding="utf-8") as archivo:
+        json.dump(crear_etiqueta(fila, matricula, pdf), archivo, ensure_ascii=False, indent=2)
+
+
+def crear_etiqueta(fila, matricula, pdf):
+    return {
+        "fields": crear_campos_etiqueta(fila, matricula),
+        "image_dimensions": {"width": int(pdf.w * pdf.k), "height": int(pdf.h * pdf.k)},
+    }
+
+
+def crear_campos_etiqueta(fila, matricula):
+    return {
+        "alu_matricula": {"value": matricula},
+        "NOMBRE_COMPLETO": {"value": str(fila["nombre_completo"])},
+        "alu_carrera": {"value": str(fila["carrera"])},
+        "alu_servicio": {"value": str(fila["servicio"])},
+    }
+
+
+def validar_csv_datos():
+    ruta_datos = os.path.join(DATA_DIR, "datos_prueba.csv")
+    if not os.path.exists(ruta_datos):
+        raise FileNotFoundError("No se encontro datos_prueba.csv. Ejecuta generate_test_data.py primero.")
+    return ruta_datos
+
+
+def crear_generador_pdf():
+    return GeneradorPDF(GENERATED_DOCS_DIR, LABELS_DIR, os.path.join(BASE_DIR, "img"))
+
+
+def preparar_datos_pdf(ruta_datos, numero_registros):
+    datos = pd.read_csv(ruta_datos, dtype={"matricula": str}).dropna()
+    datos = repetir_datos_si_hacen_falta(datos, numero_registros)
+    return datos.sample(n=numero_registros)
+
+
+def repetir_datos_si_hacen_falta(datos, numero_registros):
+    if len(datos) >= numero_registros:
+        return datos
+    repeticiones = numero_registros // len(datos) + 1
+    return pd.concat([datos] * repeticiones, ignore_index=True)
+
+
+def generar_lote_pdfs(generador, datos, registrador):
+    for indice, fila in tqdm(datos.iterrows(), total=len(datos), desc="Generando PDFs"):
         try:
-            generator.generate_pdf_and_label(row, index, "oficial")
-        except Exception as e:
-            logger.error(f"Fallo al generar PDF para la fila {index}: {e}")
+            generador.generar_pdf_y_etiqueta(fila, indice, "oficial")
+        except Exception as error:
+            registrador.error("Fallo al generar PDF para fila %s: %s", indice, error)
+
+
+def obtener_argumentos():
+    parser = argparse.ArgumentParser(description="Genera PDFs a partir de datos de prueba.")
+    parser.add_argument("--num_records", type=int, default=50)
+    return parser.parse_args()
+
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-    
-    parser = argparse.ArgumentParser(description="Genera PDFs a partir de datos de prueba.")
-    parser.add_argument("--num_records", type=int, default=50, help="Número de PDFs a generar.")
-    args = parser.parse_args()
-    
-    print(f"Generando {args.num_records} PDFs...")
-    try:
-        run_pdf_generation(args.num_records)
-        print("¡Generación de PDFs completada!")
-    except Exception as e:
-        logging.error(f"Error fatal en la ejecución: {e}", exc_info=True)
-        print(f"ERROR: {e}")
+    logging.basicConfig(level=logging.INFO)
+    argumentos = obtener_argumentos()
+    ejecutar_generacion_pdfs(argumentos.num_records)

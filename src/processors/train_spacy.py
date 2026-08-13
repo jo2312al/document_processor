@@ -1,88 +1,64 @@
-# ==============================================================================
-# ARCHIVO: train_spacy.py (Versión Profesional - Definitiva)
-#
-# PROPÓSITO:
-# Entrenar el modelo de la forma más robusta, rápida y recomendada por spaCy,
-# asegurando que se ejecuten todas las épocas de entrenamiento.
-#
-# CAMBIOS:
-# - Se ha reemplazado el bucle de entrenamiento manual por la función
-#   `spacy.cli.train`, que es el estándar de la industria.
-# - Se genera un archivo de configuración `config.cfg` explícito con todos
-#   los parámetros necesarios (incluyendo `max_epochs`), lo que soluciona
-#   el problema de que el entrenamiento se detenga prematuramente.
-# ==============================================================================
-
+﻿import logging
 import os
-import logging
 import sys
-import spacy
-from spacy.cli.train import train as spacy_train
-from spacy.cli.init_config import init_config
 
-# --- Configuración de rutas ---
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from config import DATA_DIR, MODELS_DIR, BASE_DIR
+from spacy.cli.init_config import init_config
+from spacy.cli.train import train as entrenar_spacy_cli
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+from config import BASE_DIR, DATA_DIR, LOGGING_FORMAT, MODELS_DIR
+
+
+def entrenar_modelo_spacy():
+    registrador = logging.getLogger("pipeline.entrenar_modelo_spacy")
+    rutas = construir_rutas_entrenamiento()
+    validar_datos_entrenamiento(rutas["entrenamiento"])
+    configuracion = crear_configuracion_spacy(rutas)
+    guardar_configuracion(configuracion, rutas["configuracion"], registrador)
+    ejecutar_entrenamiento(rutas, registrador)
+
 
 def run_training():
-    """
-    Entrena o re-entrena un modelo NER de spaCy usando un archivo .spacy y un config.cfg
-    generado explícitamente para asegurar un entrenamiento completo.
-    """
-    logger = logging.getLogger("pipeline_integrado.train_spacy")
-    
-    # Rutas
-    training_data_path = os.path.join(DATA_DIR, 'train.spacy')
-    dev_data_path = os.path.join(DATA_DIR, 'train.spacy') # Usamos los mismos datos para validación
-    final_model_path = os.path.join(MODELS_DIR, 'spacy_model')
-    config_path = os.path.join(BASE_DIR, "config.cfg")
+    entrenar_modelo_spacy()
 
-    if not os.path.exists(training_data_path):
-        logger.error(f"No se encontró el archivo de entrenamiento: {training_data_path}")
-        raise FileNotFoundError(f"Ejecuta 'create_spacy_file.py' primero.")
 
-    # --- Creación del Archivo de Configuración Explícito ---
-    logger.info("Generando archivo de configuración explícito (config.cfg)...")
-    
-    # 1. Generar la configuración base en memoria
-    # Usamos 'efficiency' para un entrenamiento más rápido en CPU
-    config = init_config(
-        lang="es",
-        pipeline=["tok2vec", "ner"],
-        optimize="efficiency" 
-    )
+def construir_rutas_entrenamiento():
+    return {
+        "entrenamiento": os.path.join(DATA_DIR, "train.spacy"),
+        "validacion": os.path.join(DATA_DIR, "train.spacy"),
+        "modelo_final": os.path.join(MODELS_DIR, "spacy_model"),
+        "configuracion": os.path.join(BASE_DIR, "config.cfg"),
+    }
 
-    # 2. Modificar la configuración con nuestros parámetros deseados
-    config["paths"]["train"] = training_data_path
-    config["paths"]["dev"] = dev_data_path
-    config["paths"]["vectors"] = None
-    config["training"]["max_epochs"] = 15  # ¡CRÍTICO! Forzar las 15 épocas
-    config["training"]["patience"] = 16    # Paciencia > max_epochs para asegurar que no se detenga
-    
-    # 3. Guardar la configuración final y completa en el disco
-    config.to_disk(config_path)
-    logger.info(f"Archivo config.cfg guardado en: {config_path}")
 
-    logger.info("Iniciando entrenamiento con spacy.cli.train...")
-    print("\nIniciando entrenamiento del modelo (método profesional)...")
+def validar_datos_entrenamiento(ruta_entrenamiento):
+    if not os.path.exists(ruta_entrenamiento):
+        raise FileNotFoundError("Ejecuta create_spacy_file.py primero.")
 
-    # 4. Llamar a la función de entrenamiento de spaCy
-    spacy_train(
-        config_path,
-        output_path=final_model_path,
-    )
-    
-    logger.info(f"Modelo final guardado en: {final_model_path}")
-    print(f"\n¡Entrenamiento completado! Modelo guardado en: {final_model_path}")
+
+def crear_configuracion_spacy(rutas):
+    configuracion = init_config(lang="es", pipeline=["tok2vec", "ner"], optimize="efficiency")
+    configuracion["paths"]["train"] = rutas["entrenamiento"]
+    configuracion["paths"]["dev"] = rutas["validacion"]
+    configuracion["paths"]["vectors"] = None
+    configuracion["training"]["max_epochs"] = 15
+    configuracion["training"]["patience"] = 16
+    return configuracion
+
+
+def guardar_configuracion(configuracion, ruta_configuracion, registrador):
+    configuracion.to_disk(ruta_configuracion)
+    registrador.info("Archivo config.cfg guardado en: %s", ruta_configuracion)
+
+
+def ejecutar_entrenamiento(rutas, registrador):
+    print("\nIniciando entrenamiento del modelo spaCy...")
+    entrenar_spacy_cli(rutas["configuracion"], output_path=rutas["modelo_final"])
+    registrador.info("Modelo final guardado en: %s", rutas["modelo_final"])
+    print(f"\nEntrenamiento completado. Modelo guardado en: {rutas['modelo_final']}")
 
 
 if __name__ == "__main__":
-    from config import LOGGING_FORMAT, LOGGING_LEVEL, LOGS_DIR
-    os.makedirs(LOGS_DIR, exist_ok=True)
-    logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT, filemode='a')
-
-    try:
-        run_training()
-    except Exception as e:
-        logging.error(f"Error fatal durante el entrenamiento: {e}", exc_info=True)
-        print(f"ERROR: {e}")
+    logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT)
+    entrenar_modelo_spacy()
