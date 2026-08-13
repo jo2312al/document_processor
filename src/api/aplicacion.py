@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import os
 import tempfile
 
@@ -10,7 +10,7 @@ from src.api.rutas_publicas import rutas_publicas
 
 
 def crear_aplicacion():
-    app = Flask(__name__, template_folder=_ruta_plantillas())
+    app = Flask(__name__, template_folder=_ruta_plantillas(), static_folder=_ruta_static())
     configurar_carga_archivos(app)
     configurar_registro_eventos()
     registrar_rutas(app)
@@ -20,6 +20,10 @@ def crear_aplicacion():
 def _ruta_plantillas():
     base = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     return os.path.join(base, "templates")
+
+
+def _ruta_static():
+    return os.path.join(os.path.dirname(__file__), "static")
 
 
 def configurar_carga_archivos(app):

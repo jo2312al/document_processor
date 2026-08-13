@@ -4,135 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consola de aprendizaje documental</title>
-        <style>
-        :root {
-            color-scheme: light;
-            --fondo: #eef3f7;
-            --fondo-tinta: #dfe9f1;
-            --panel: #ffffff;
-            --panel-suave: #f7fafc;
-            --linea: #c9d6e2;
-            --linea-fuerte: #9fb2c5;
-            --texto: #162333;
-            --muted: #5e6d7d;
-            --azul: #1457d9;
-            --azul-profundo: #0b367f;
-            --azul-suave: #e7f0ff;
-            --verde: #087443;
-            --verde-suave: #e4f8ec;
-            --ambar: #a65f00;
-            --ambar-suave: #fff3cf;
-            --rojo: #b42318;
-            --rojo-suave: #fee4e2;
-            --sombra: 0 18px 45px rgba(16, 35, 55, .08);
-            --radio: 8px;
-        }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            background: linear-gradient(135deg, var(--fondo) 0%, #f8fbfd 48%, var(--fondo-tinta) 100%);
-            color: var(--texto);
-            font-family: "Segoe UI", Inter, Arial, sans-serif;
-        }
-        h1, h2, h3, p { margin: 0; }
-        h1 { font-size: 28px; line-height: 1.12; letter-spacing: 0; }
-        h2 { font-size: 20px; line-height: 1.25; }
-        h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
-        a { color: var(--azul); font-weight: 800; text-decoration: none; }
-        label { display: grid; gap: 7px; font-size: 13px; font-weight: 750; color: #314156; }
-        input, select, textarea {
-            width: 100%; min-height: 42px; padding: 10px 12px;
-            border: 1px solid var(--linea-fuerte); border-radius: var(--radio);
-            background: white; color: var(--texto); font: inherit;
-        }
-        textarea { min-height: 104px; resize: vertical; }
-        input:focus, select:focus, textarea:focus, button:focus-visible {
-            outline: 3px solid rgba(20, 87, 217, .18); outline-offset: 2px;
-        }
-        button {
-            min-height: 42px; border: 0; border-radius: var(--radio); padding: 10px 15px;
-            background: var(--azul); color: white; font: inherit; font-weight: 800; cursor: pointer;
-        }
-        button:hover { filter: brightness(.97); transform: translateY(-1px); }
-        button.secundario { background: var(--azul-profundo); }
-        button.fantasma { background: white; border: 1px solid var(--linea-fuerte); color: var(--texto); }
-        button.tab {
-            display: grid; grid-template-columns: 30px 1fr; align-items: center; gap: 10px;
-            background: transparent; color: #344054; text-align: left; border: 1px solid transparent;
-            border-radius: var(--radio); padding: 11px 12px;
-        }
-        button.tab::before {
-            content: attr(data-paso); display: grid; place-items: center;
-            width: 28px; height: 28px; border-radius: 999px;
-            background: #edf3f8; color: #53677d; font-size: 12px; font-weight: 900;
-        }
-        button.tab.activo { color: var(--azul-profundo); background: var(--azul-suave); border-color: #bad0ff; }
-        button.tab.activo::before { background: var(--azul); color: white; }
-        button:disabled { background: #98a2b3; cursor: not-allowed; transform: none; }
-        code, pre { font-family: Consolas, "SFMono-Regular", monospace; }
-        pre {
-            white-space: pre-wrap; word-break: break-word; margin: 0; border-radius: var(--radio);
-            padding: 14px; background: #122033; color: #e6edf5; font-size: 12px; line-height: 1.55;
-        }
-        .layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh; }
-        .sidebar {
-            position: sticky; top: 0; height: 100vh; padding: 24px;
-            background: rgba(255,255,255,.86); border-right: 1px solid var(--linea);
-            backdrop-filter: blur(18px); display: flex; flex-direction: column; gap: 20px;
-        }
-        .brand { display: grid; gap: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--linea); }
-        .brand p { color: var(--muted); line-height: 1.45; font-size: 13px; }
-        .token { display: grid; gap: 10px; padding: 15px; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel-suave); }
-        .nav { display: grid; gap: 6px; }
-        .contenido { width: min(1240px, 100%); padding: 30px; display: grid; gap: 22px; align-content: start; }
-        .cabecera {
-            position: relative; overflow: hidden; background: var(--panel); border: 1px solid var(--linea);
-            border-radius: var(--radio); padding: 22px; display: grid; gap: 18px; box-shadow: var(--sombra);
-        }
-        .cabecera::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 7px; background: linear-gradient(var(--azul), var(--verde)); }
-        .cabecera-top { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; flex-wrap: wrap; padding-left: 4px; }
-        .resumen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-        .dato { background: var(--panel-suave); border: 1px solid var(--linea); border-radius: var(--radio); padding: 14px; }
-        .dato strong { display: block; font-size: 24px; margin-top: 6px; color: var(--azul-profundo); }
-        .panel { background: rgba(255,255,255,.94); border: 1px solid var(--linea); border-radius: var(--radio); padding: 22px; box-shadow: var(--sombra); }
-        .tab-panel { display: none; }
-        .tab-panel.activo { display: grid; gap: 18px; }
-        .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-        .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-        .split { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 20px; align-items: start; }
-        .stack { display: grid; gap: 16px; }
-        .lista { display: grid; gap: 12px; }
-        .fila, .tipo { border: 1px solid var(--linea); background: var(--panel-suave); border-radius: var(--radio); padding: 15px; }
-        .tipo { width: 100%; color: var(--texto); text-align: left; background: white; }
-        .tipo.activo { border-color: #8aa8ff; background: var(--azul-suave); box-shadow: inset 4px 0 0 var(--azul); }
-        .fila-titulo { display: flex; justify-content: space-between; gap: 14px; align-items: center; }
-        .muted { color: var(--muted); font-size: 13px; line-height: 1.5; }
-        .badge {
-            display: inline-flex; align-items: center; border: 1px solid #c7d0dd; background: white;
-            border-radius: 999px; padding: 5px 11px; font-size: 12px; color: #475467; font-weight: 850;
-        }
-        .badge.ok { border-color: #75e0a7; background: var(--verde-suave); color: var(--verde); }
-        .badge.warn { border-color: #fdb022; background: var(--ambar-suave); color: var(--ambar); }
-        .badge.error { border-color: #fda29b; background: var(--rojo-suave); color: var(--rojo); }
-        .vacio { border: 1px dashed #9fb2c5; border-radius: var(--radio); padding: 18px; color: var(--muted); background: white; }
-        .estado { min-height: 22px; font-size: 13px; color: var(--azul); }
-        .estado.error { color: var(--rojo); }
-        .estado.ok { color: var(--verde); }
-        .ocr { min-height: 320px; font-family: Consolas, monospace; line-height: 1.55; }
-        .acciones { display: flex; gap: 10px; flex-wrap: wrap; }
-        .callout { background: #fff8df; border: 1px solid #f4d47c; border-radius: var(--radio); padding: 15px; color: #65410b; line-height: 1.5; }
-        .timeline { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
-        .paso { border: 1px solid var(--linea); background: white; border-radius: var(--radio); padding: 14px; min-height: 92px; }
-        .paso strong { color: var(--azul-profundo); }
-        .metricas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-        .metric-card { border: 1px solid var(--linea); border-radius: var(--radio); padding: 14px; background: white; }
-        @media (max-width: 980px) {
-            .layout { grid-template-columns: 1fr; }
-            .sidebar { position: static; height: auto; }
-            .contenido { padding: 18px; }
-            .resumen, .grid2, .grid3, .split, .timeline, .metricas { grid-template-columns: 1fr; }
-        }
-    </style>
+    <link rel="stylesheet" href="/static/admin.css">
 </head>
 <body>
     <div class="layout">
@@ -141,18 +13,21 @@
                 <h1>Consola documental</h1>
                 <p>Panel administrativo para definir documentos, revisar evidencias y controlar modelos OCR/NLP.</p>
             </div>
+
             <div class="token">
                 <label>Token administrador<input id="token-admin" type="password" placeholder="X-Admin-Token"></label>
                 <button id="guardar-token" class="secundario" type="button">Guardar token</button>
-                <a href="/analizador">Abrir analizador público</a>
+                <a href="/analizador">Abrir analizador publico</a>
             </div>
+
             <nav class="nav">
                 <button class="tab activo" type="button" data-tab="documento" data-paso="01">Documento</button>
                 <button class="tab" type="button" data-tab="campos" data-paso="02">Campos</button>
-                <button class="tab" type="button" data-tab="entrenamiento" data-paso="03">Anotación</button>
-                <button class="tab" type="button" data-tab="aprendizaje" data-paso="04">Aprendizaje</button>
-                <button class="tab" type="button" data-tab="modelo" data-paso="05">Modelos</button>
-                <button class="tab" type="button" data-tab="api" data-paso="06">API</button>
+                <button class="tab" type="button" data-tab="plantilla" data-paso="03">Plantilla</button>
+                <button class="tab" type="button" data-tab="entrenamiento" data-paso="04">Anotacion</button>
+                <button class="tab" type="button" data-tab="aprendizaje" data-paso="05">Aprendizaje</button>
+                <button class="tab" type="button" data-tab="modelo" data-paso="06">Modelos</button>
+                <button class="tab" type="button" data-tab="api" data-paso="07">API</button>
             </nav>
         </aside>
 
@@ -161,7 +36,7 @@
                 <div class="cabecera-top">
                     <div>
                         <h1 id="detalle-titulo">Selecciona un tipo documental</h1>
-                        <p id="detalle-descripcion" class="muted">Administra el ciclo completo: estructura del documento, OCR, validación humana, entrenamiento por lotes y publicación del modelo.</p>
+                        <p id="detalle-descripcion" class="muted">Administra estructura, OCR, validacion humana, entrenamiento por lotes y publicacion del modelo.</p>
                     </div>
                     <div class="acciones">
                         <span id="detalle-estado" class="badge">sin documento</span>
@@ -172,96 +47,79 @@
                     <div class="dato"><span class="muted">Campos</span><strong id="resumen-campos">0</strong></div>
                     <div class="dato"><span class="muted">Documentos OCR</span><strong id="resumen-documentos">0</strong></div>
                     <div class="dato"><span class="muted">Lotes</span><strong id="resumen-lotes">0</strong></div>
-                    <div class="dato"><span class="muted">Última decisión</span><strong id="resumen-decision">-</strong></div>
+                    <div class="dato"><span class="muted">Ultima decision</span><strong id="resumen-decision">-</strong></div>
                 </div>
                 <p id="estado-global" class="estado"></p>
             </section>
 
             <section id="tab-documento" class="tab-panel activo">
-                <div class="split">
-                    <section class="panel stack"><h2>Tipos documentales</h2><div id="lista-tipos" class="lista"></div></section>
-                    <section class="panel stack">
-                        <h2>Crear tipo documental</h2>
-                        <form id="form-tipo" class="stack">
-                            <label>Nombre<input name="nombre" required placeholder="Constancia de servicio social"></label>
-                            <label>Descripción<textarea name="descripcion" placeholder="Documento escolar que acredita servicio social"></textarea></label>
-                            <div class="grid2"><label>Estado<select name="estado"><option value="borrador">Borrador</option><option value="activo">Activo</option></select></label><label>Modelo inicial<input name="modelo_activo" value="spacy_model"></label></div>
-                            <button type="submit">Crear tipo documental</button>
-                        </form>
-                    </section>
-                </div>
-            </section>
-
-            <section id="tab-campos" class="tab-panel">
-                <section class="panel stack"><h2>Campos obligatorios y opcionales</h2><div id="lista-campos" class="lista"></div><form id="form-campo" class="stack"><div class="grid2"><label>Nombre<input name="nombre" required placeholder="Matrícula"></label><label>Clave<input name="clave" placeholder="alu_matricula"></label></div><div class="grid2"><label>Etiqueta spaCy<input name="etiqueta_entidad" required placeholder="MATRICULA"></label><label>Tipo<select name="tipo_dato"><option value="texto">Texto</option><option value="fecha">Fecha</option><option value="catalogo">Catálogo</option></select></label></div><label><span><input name="obligatorio" type="checkbox"> Campo obligatorio</span></label><label>Descripción<textarea name="descripcion"></textarea></label><button type="submit">Agregar campo</button></form></section>
-            </section>
-
-            <section id="tab-entrenamiento" class="tab-panel">
-                <section class="panel stack"><h2>Anotación asistida</h2><div class="split"><div class="stack"><form id="form-entrenamiento" class="stack"><label>PDF<input name="file" type="file" accept=".pdf" required></label><label>Preprocesamiento<select name="metodo_preprocesamiento"><option value="tesseract">Tesseract</option><option value="docling">Docling</option></select></label><button type="submit">Subir y generar OCR</button></form><div id="lista-documentos-entrenamiento" class="lista"></div></div><div class="stack"><textarea id="texto-ocr-entrenamiento" class="ocr" readonly placeholder="Selecciona un documento para revisar OCR."></textarea><div class="grid2"><label>Campo<select id="campo-anotacion"></select></label><label>Texto seleccionado<input id="texto-anotado" readonly></label></div><button id="guardar-anotacion" type="button">Guardar anotación</button></div></div></section>
-            </section>
-
-            <section id="tab-aprendizaje" class="tab-panel">
                 <section class="panel stack">
-                    <div class="fila-titulo"><div><h2>Lotes de entrenamiento</h2><p class="muted">Documentos validados desde el sistema externo alimentan el modelo por lotes.</p></div><button id="refrescar-lotes" class="fantasma" type="button">Refrescar</button></div>
-                    <div class="timeline"><div class="paso"><strong>1. Recibir</strong><p class="muted">PDF + datos corregidos</p></div><div class="paso"><strong>2. Acumular</strong><p class="muted">Umbral configurable</p></div><div class="paso"><strong>3. Entrenar</strong><p class="muted">Celery + Redis</p></div><div class="paso"><strong>4. Evaluar</strong><p class="muted">Campo por campo</p></div><div class="paso"><strong>5. Activar</strong><p class="muted">Solo si no empeora</p></div></div>
-                    <div id="lista-lotes" class="lista"></div>
+                    <div class="panel-titulo">
+                        <div>
+                            <h2>Tipos documentales</h2>
+                            <p class="muted">Cada documento tiene acciones directas para configurarlo sin buscar en el menu.</p>
+                        </div>
+                        <button id="abrir-wizard-tipo" type="button">Crear tipo documental</button>
+                    </div>
+                    <div id="lista-tipos" class="lista"></div>
                 </section>
             </section>
 
+            <section id="tab-campos" class="tab-panel">
+                <section class="panel stack">
+                    <h2>Campos obligatorios y opcionales</h2>
+                    <div id="lista-campos" class="lista"></div>
+                    <form id="form-campo" class="stack">
+                        <div class="grid2"><label>Nombre<input name="nombre" required placeholder="Matricula"></label><label>Clave<input name="clave" placeholder="alu_matricula"></label></div>
+                        <div class="grid2"><label>Etiqueta spaCy<input name="etiqueta_entidad" required placeholder="MATRICULA"></label><label>Tipo<select name="tipo_dato"><option value="texto">Texto</option><option value="fecha">Fecha</option><option value="catalogo">Catalogo</option></select></label></div>
+                        <label><span><input name="obligatorio" type="checkbox"> Campo obligatorio</span></label>
+                        <label>Descripcion<textarea name="descripcion"></textarea></label>
+                        <button type="submit">Agregar campo</button>
+                    </form>
+                </section>
+            </section>
+
+            <section id="tab-plantilla" class="tab-panel">
+                <section class="panel stack">
+                    <div class="panel-titulo"><div><h2>Plantilla aprendida</h2><p class="muted">Sube el primer PDF validado y escribe sus valores reales. El sistema ubicara texto, posiciones y contexto.</p></div><span id="estado-plantilla" class="badge">sin plantilla</span></div>
+                    <form id="form-plantilla" class="stack">
+                        <div class="grid2"><label>Nombre de plantilla<input name="nombre_plantilla" placeholder="Formato base"></label><label>PDF de referencia<input name="file" type="file" accept=".pdf" required></label></div>
+                        <label>Valores del primer documento<textarea name="campos_muestra" required placeholder='{"alu_matricula":"2411367","NOMBRE_COMPLETO":"Juan Perez Lopez","alu_carrera":"Ingenieria","alu_servicio":"ENERO A JULIO"}'></textarea></label>
+                        <button type="submit">Crear plantilla desde OCR</button>
+                    </form>
+                    <div id="plantilla-resultado" class="vacio">Cuando se cree una plantilla, aqui apareceran sus campos ubicados.</div>
+                </section>
+            </section>
+
+            <section id="tab-entrenamiento" class="tab-panel">
+                <section class="panel stack"><h2>Anotacion asistida</h2><div class="split"><div class="stack"><form id="form-entrenamiento" class="stack"><label>PDF<input name="file" type="file" accept=".pdf" required></label><label>Preprocesamiento<select name="metodo_preprocesamiento"><option value="tesseract">Tesseract</option><option value="docling">Docling</option></select></label><button type="submit">Subir y generar OCR</button></form><div id="lista-documentos-entrenamiento" class="lista"></div></div><div class="stack"><textarea id="texto-ocr-entrenamiento" class="ocr" readonly placeholder="Selecciona un documento para revisar OCR."></textarea><div class="grid2"><label>Campo<select id="campo-anotacion"></select></label><label>Texto seleccionado<input id="texto-anotado" readonly></label></div><button id="guardar-anotacion" type="button">Guardar anotacion</button></div></div></section>
+            </section>
+
+            <section id="tab-aprendizaje" class="tab-panel">
+                <section class="panel stack"><div class="fila-titulo"><div><h2>Lotes de entrenamiento</h2><p class="muted">Documentos validados desde el sistema externo alimentan el modelo por lotes.</p></div><button id="refrescar-lotes" class="fantasma" type="button">Refrescar</button></div><div class="timeline"><div class="paso"><strong>1. Recibir</strong><p class="muted">PDF + datos corregidos</p></div><div class="paso"><strong>2. Acumular</strong><p class="muted">Umbral configurable</p></div><div class="paso"><strong>3. Entrenar</strong><p class="muted">Celery + Redis</p></div><div class="paso"><strong>4. Evaluar</strong><p class="muted">Campo por campo</p></div><div class="paso"><strong>5. Activar</strong><p class="muted">Solo si no empeora</p></div></div><div id="lista-lotes" class="lista"></div></section>
+            </section>
+
             <section id="tab-modelo" class="tab-panel">
-                <section class="panel stack"><h2>Versiones de modelo</h2><div id="lista-modelos" class="lista"></div><form id="form-modelo" class="stack"><div class="grid2"><label>Nombre modelo<input name="nombre_modelo" required></label><label>Ruta modelo<input name="ruta_modelo"></label></div><div class="grid2"><label>Documentos usados<input name="documentos_entrenamiento" type="number" min="0" value="0"></label><label>F1 entidades<input name="f1_entidades" type="number" min="0" max="1" step="0.0001"></label></div><label><span><input name="activar" type="checkbox"> Activar como modelo en producción</span></label><label>Observaciones<textarea name="observaciones"></textarea></label><button type="submit">Registrar modelo</button></form></section>
+                <section class="panel stack"><h2>Versiones de modelo</h2><div id="lista-modelos" class="lista"></div><form id="form-modelo" class="stack"><div class="grid2"><label>Nombre modelo<input name="nombre_modelo" required></label><label>Ruta modelo<input name="ruta_modelo"></label></div><div class="grid2"><label>Documentos usados<input name="documentos_entrenamiento" type="number" min="0" value="0"></label><label>F1 entidades<input name="f1_entidades" type="number" min="0" max="1" step="0.0001"></label></div><label><span><input name="activar" type="checkbox"> Activar como modelo en produccion</span></label><label>Observaciones<textarea name="observaciones"></textarea></label><button type="submit">Registrar modelo</button></form></section>
             </section>
 
             <section id="tab-api" class="tab-panel">
-                <section class="panel stack"><h2>Conexión API</h2><div class="callout">El sistema externo usa <code>/extract</code> para extraer y <code>/aprendizaje/documentos-validados</code> para enviar correcciones validadas.</div><form id="form-api-key" class="stack"><div class="grid2"><label>Nombre integración<input name="nombre" required placeholder="Sistema público"></label><label>Permiso<select name="permiso"><option value="extract">Extracción y aprendizaje</option></select></label></div><button type="submit">Generar API key</button></form><div id="api-key-generada" class="vacio" style="display:none;"><strong>API key generada</strong><pre id="api-key-valor"></pre></div><div id="lista-api-keys" class="lista"></div><div class="grid2"><pre id="ejemplo-curl"></pre><pre id="ejemplo-js"></pre></div></section>
+                <section class="panel stack"><h2>Conexion API</h2><div class="callout">El sistema externo usa <code>/extract</code> para extraer y <code>/aprendizaje/documentos-validados</code> para enviar correcciones validadas.</div><form id="form-api-key" class="stack"><div class="grid2"><label>Nombre integracion<input name="nombre" required placeholder="Sistema publico"></label><label>Permiso<select name="permiso"><option value="extract">Extraccion y aprendizaje</option></select></label></div><button type="submit">Generar API key</button></form><div id="api-key-generada" class="vacio" style="display:none;"><strong>API key generada</strong><pre id="api-key-valor"></pre></div><div id="lista-api-keys" class="lista"></div><div class="grid2"><pre id="ejemplo-curl"></pre><pre id="ejemplo-js"></pre></div></section>
             </section>
         </main>
     </div>
 
-    <script>
-        const estadoGlobal = document.getElementById('estado-global');
-        const tokenInput = document.getElementById('token-admin');
-        let tiposDocumento = [];
-        let tipoSeleccionado = null;
-        let documentoEntrenamientoSeleccionado = null;
-        let rangoSeleccionado = null;
-        let ultimaApiKey = 'TU_API_KEY';
+    <div id="modal-tipo" class="modal-fondo" aria-hidden="true">
+        <form id="form-tipo" class="modal stack">
+            <div class="fila-titulo"><div><h2>Crear tipo documental</h2><p class="muted">Completa un paso a la vez para registrar un nuevo documento.</p></div><button id="cerrar-wizard-tipo" class="fantasma" type="button">Cerrar</button></div>
+            <div class="pasos-wizard"><span class="paso-wizard activo"></span><span class="paso-wizard"></span><span class="paso-wizard"></span><span class="paso-wizard"></span></div>
+            <div class="wizard-pagina activa" data-pagina-tipo="0"><label>Nombre<input name="nombre" required placeholder="Ficha de pago"></label><div class="acciones"><button type="button" data-next-tipo>Continuar</button></div></div>
+            <div class="wizard-pagina" data-pagina-tipo="1"><label>Descripcion<textarea name="descripcion" placeholder="Documento usado para validar pagos escolares."></textarea></label><div class="acciones"><button class="fantasma" type="button" data-prev-tipo>Regresar</button><button type="button" data-next-tipo>Continuar</button></div></div>
+            <div class="wizard-pagina" data-pagina-tipo="2"><div class="grid2"><label>Estado<select name="estado"><option value="borrador">Borrador</option><option value="activo">Activo</option></select></label><label>Modelo inicial<input name="modelo_activo" value="spacy_model"></label></div><div class="acciones"><button class="fantasma" type="button" data-prev-tipo>Regresar</button><button type="button" data-next-tipo>Continuar</button></div></div>
+            <div class="wizard-pagina" data-pagina-tipo="3"><div id="resumen-tipo" class="resumen-confirmacion"></div><div class="acciones"><button class="fantasma" type="button" data-prev-tipo>Regresar</button><button type="submit">Crear tipo documental</button></div></div>
+        </form>
+    </div>
 
-        tokenInput.value = localStorage.getItem('admin_token') || '';
-        document.getElementById('guardar-token').onclick = async () => { localStorage.setItem('admin_token', tokenInput.value); mostrarEstado('Token guardado.', 'ok'); await cargarTodo(); };
-        document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => activarTab(tab.dataset.tab));
-        document.getElementById('refrescar-lotes').onclick = cargarLotes;
-
-        function tokenAdmin() { return tokenInput.value || localStorage.getItem('admin_token') || ''; }
-        function mostrarEstado(mensaje, clase = '') { estadoGlobal.textContent = mensaje; estadoGlobal.className = `estado ${clase}`; }
-        function activarTab(tabId) { document.querySelectorAll('.tab').forEach(t => t.classList.toggle('activo', t.dataset.tab === tabId)); document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('activo', p.id === `tab-${tabId}`)); if (tabId === 'aprendizaje') cargarLotes(); if (tabId === 'api') cargarApiKeys(); }
-        async function apiJson(url, opciones = {}) { const headers = opciones.headers || {}; if (opciones.body) headers['Content-Type'] = 'application/json'; if (opciones.admin) headers['X-Admin-Token'] = tokenAdmin(); const r = await fetch(url, {...opciones, headers}); const data = await r.json(); if (!r.ok) throw new Error(data.error || 'Operación no completada'); return data; }
-        async function cargarTodo() { await cargarTipos(); await cargarDocumentosEntrenamiento(); await cargarLotes(); await cargarApiKeys(); }
-
-        async function cargarTipos() { const data = await apiJson('/tipos-documento'); tiposDocumento = data.tipos_documento || []; if (!tipoSeleccionado && tiposDocumento.length) tipoSeleccionado = tiposDocumento[0].id_tipo_documento; renderTipos(); renderDetalle(); actualizarEjemplosApi(); }
-        function renderTipos() { const lista = document.getElementById('lista-tipos'); lista.innerHTML = ''; tiposDocumento.forEach(tipo => { const b = document.createElement('button'); b.type = 'button'; b.className = `tipo ${tipo.id_tipo_documento === tipoSeleccionado ? 'activo' : ''}`; b.innerHTML = `<strong>${tipo.nombre}</strong><br><span class="muted">${tipo.id_tipo_documento}</span>`; b.onclick = async () => { tipoSeleccionado = tipo.id_tipo_documento; renderTipos(); renderDetalle(); await cargarDocumentosEntrenamiento(); await cargarLotes(); }; lista.appendChild(b); }); if (!tiposDocumento.length) lista.innerHTML = '<div class="vacio">Sin tipos documentales.</div>'; }
-        function renderDetalle() { const tipo = tiposDocumento.find(t => t.id_tipo_documento === tipoSeleccionado); if (!tipo) return; document.getElementById('detalle-titulo').textContent = tipo.nombre; document.getElementById('detalle-descripcion').textContent = tipo.descripcion || 'Sin descripción registrada.'; document.getElementById('detalle-estado').textContent = `Estado: ${tipo.estado}`; document.getElementById('detalle-modelo').textContent = `Modelo: ${tipo.modelo_activo || 'sin modelo'}`; renderCampos(tipo.campos || []); renderModelos(tipo.versiones_modelo || []); }
-        function renderCampos(campos) { document.getElementById('resumen-campos').textContent = campos.length; const lista = document.getElementById('lista-campos'); const select = document.getElementById('campo-anotacion'); lista.innerHTML = ''; select.innerHTML = ''; campos.forEach(campo => { lista.innerHTML += `<div class="fila"><div class="fila-titulo"><strong>${campo.nombre}</strong><span class="badge ${campo.obligatorio ? 'ok' : ''}">${campo.etiqueta_entidad}</span></div><p class="muted">${campo.clave} · ${campo.tipo_dato || 'texto'}</p></div>`; const option = document.createElement('option'); option.value = campo.clave; option.dataset.etiqueta = campo.etiqueta_entidad; option.textContent = `${campo.nombre} (${campo.etiqueta_entidad})`; select.appendChild(option); }); if (!campos.length) lista.innerHTML = '<div class="vacio">Agrega campos para entrenar.</div>'; }
-        function renderModelos(modelos) { const lista = document.getElementById('lista-modelos'); lista.innerHTML = ''; modelos.forEach(modelo => lista.innerHTML += `<div class="fila"><div class="fila-titulo"><strong>${modelo.nombre_modelo}</strong><span class="badge ${modelo.estado === 'activo' ? 'ok' : modelo.estado === 'rechazado' ? 'error' : 'warn'}">${modelo.estado}</span></div><p class="muted">${modelo.documentos_entrenamiento || 0} documentos · F1 ${modelo.metricas?.f1_entidades ?? '-'}</p></div>`); if (!modelos.length) lista.innerHTML = '<div class="vacio">Sin versiones registradas.</div>'; }
-        async function cargarDocumentosEntrenamiento() { if (!tipoSeleccionado) return; try { const data = await apiJson(`/admin/tipos-documento/${tipoSeleccionado}/documentos-entrenamiento`, {admin:true}); renderDocumentos(data.documentos_entrenamiento || []); } catch { document.getElementById('lista-documentos-entrenamiento').innerHTML = '<div class="vacio">Guarda el token para listar documentos.</div>'; } }
-        function renderDocumentos(documentos) { document.getElementById('resumen-documentos').textContent = documentos.length; const lista = document.getElementById('lista-documentos-entrenamiento'); lista.innerHTML = ''; documentos.forEach(doc => { const b = document.createElement('button'); b.type = 'button'; b.className = 'tipo'; b.innerHTML = `<strong>${doc.nombre_archivo}</strong><br><span class="muted">${doc.estado} · ${(doc.anotaciones || []).length} anotaciones</span>`; b.onclick = () => { documentoEntrenamientoSeleccionado = doc.id_documento_entrenamiento; document.getElementById('texto-ocr-entrenamiento').value = doc.texto_ocr || ''; }; lista.appendChild(b); }); if (!documentos.length) lista.innerHTML = '<div class="vacio">Sube un PDF para generar OCR.</div>'; }
-        async function cargarLotes() { if (!tipoSeleccionado) return; try { const data = await apiJson(`/admin/aprendizaje/lotes?id_tipo_documento=${tipoSeleccionado}`, {admin:true}); renderLotes(data.aprendizaje?.lotes || []); } catch (e) { document.getElementById('lista-lotes').innerHTML = '<div class="vacio">Guarda el token para ver lotes.</div>'; } }
-        function renderLotes(lotes) { document.getElementById('resumen-lotes').textContent = lotes.length; const lista = document.getElementById('lista-lotes'); lista.innerHTML = ''; lotes.forEach(lote => lista.appendChild(crearLote(lote))); if (!lotes.length) lista.innerHTML = '<div class="vacio">Aún no hay documentos validados recibidos.</div>'; const ultimo = lotes[0]; document.getElementById('resumen-decision').textContent = ultimo?.estado || '-'; }
-        function crearLote(lote) { const div = document.createElement('div'); div.className = 'fila stack'; div.innerHTML = `<div class="fila-titulo"><div><strong>Lote ${lote.id_lote.slice(0,8)}</strong><p class="muted">${(lote.documentos || []).length} documentos · ${lote.estado}</p></div><button class="fantasma" type="button">Entrenar lote</button></div>${htmlMetricas(lote)}${htmlRecomendaciones(lote)}`; div.querySelector('button').onclick = () => entrenarLote(lote.id_lote); return div; }
-        function htmlMetricas(lote) { const comp = lote.decision?.comparacion || {}; const cards = Object.entries(comp).map(([campo, d]) => `<div class="metric-card"><strong>${campo}</strong><p class="muted">F1 anterior ${d.f1_anterior} · F1 candidato ${d.f1_candidato}</p><span class="badge ${d.resultado === 'mejoro' ? 'ok' : d.resultado === 'empeoro' ? 'error' : 'warn'}">${d.resultado}</span></div>`).join(''); return cards ? `<div class="metricas">${cards}</div>` : ''; }
-        function htmlRecomendaciones(lote) { const recs = lote.recomendaciones || lote.decision?.recomendaciones || []; return recs.length ? `<div class="callout">${recs.join('<br>')}</div>` : ''; }
-        async function entrenarLote(idLote) { try { mostrarEstado('Entrenamiento enviado a cola.', ''); await apiJson(`/admin/aprendizaje/lotes/${idLote}/entrenar`, {method:'POST', admin:true}); await cargarLotes(); } catch (e) { mostrarEstado(e.message, 'error'); } }
-        async function cargarApiKeys() { try { const data = await apiJson('/admin/api-keys', {admin:true}); document.getElementById('lista-api-keys').innerHTML = (data.api_keys || []).map(k => `<div class="fila"><strong>${k.nombre}</strong><p class="muted">${k.prefijo}</p></div>`).join('') || '<div class="vacio">Sin API keys.</div>'; } catch { document.getElementById('lista-api-keys').innerHTML = '<div class="vacio">Guarda el token.</div>'; } actualizarEjemplosApi(); }
-        function actualizarEjemplosApi() { const base = window.location.origin; document.getElementById('ejemplo-curl').textContent = `curl -X POST "${base}/aprendizaje/documentos-validados" \\\n  -H "X-API-Key: ${ultimaApiKey}" \\\n  -F "id_tipo_documento=${tipoSeleccionado || 'constancia_servicio'}" \\\n  -F 'campos_validados={"alu_matricula":"2411367","NOMBRE_COMPLETO":"Juan Perez Lopez","alu_carrera":"Ingenieria","alu_servicio":"ENERO A JULIO"}' \\\n  -F "file=@constancia.pdf"`; document.getElementById('ejemplo-js').textContent = `const formData = new FormData();\nformData.append("file", archivoPdf);\nformData.append("id_tipo_documento", "${tipoSeleccionado || 'constancia_servicio'}");\nformData.append("campos_validados", JSON.stringify(datosCorregidos));\nawait fetch("${base}/aprendizaje/documentos-validados", { method: "POST", headers: { "X-API-Key": "${ultimaApiKey}" }, body: formData });`; }
-
-        document.getElementById('form-api-key').onsubmit = async e => { e.preventDefault(); const form = new FormData(e.currentTarget); const data = await apiJson('/admin/api-keys', {method:'POST', admin:true, body:JSON.stringify({nombre:form.get('nombre'), permisos:['extract']})}); ultimaApiKey = data.api_key; document.getElementById('api-key-valor').textContent = data.api_key; document.getElementById('api-key-generada').style.display = 'grid'; await cargarApiKeys(); };
-        document.getElementById('form-tipo').onsubmit = async e => { e.preventDefault(); const form = new FormData(e.currentTarget); await apiJson('/admin/tipos-documento', {method:'POST', admin:true, body:JSON.stringify({nombre:form.get('nombre'), descripcion:form.get('descripcion'), estado:form.get('estado'), modelo_activo:form.get('modelo_activo')})}); e.currentTarget.reset(); await cargarTipos(); };
-        document.getElementById('form-campo').onsubmit = async e => { e.preventDefault(); const f = new FormData(e.currentTarget); await apiJson(`/admin/tipos-documento/${tipoSeleccionado}/campos`, {method:'POST', admin:true, body:JSON.stringify({nombre:f.get('nombre'), clave:f.get('clave'), etiqueta_entidad:f.get('etiqueta_entidad'), tipo_dato:f.get('tipo_dato'), obligatorio:f.get('obligatorio') === 'on', descripcion:f.get('descripcion')})}); e.currentTarget.reset(); await cargarTipos(); };
-        document.getElementById('form-modelo').onsubmit = async e => { e.preventDefault(); const f = new FormData(e.currentTarget); await apiJson(`/admin/tipos-documento/${tipoSeleccionado}/modelos`, {method:'POST', admin:true, body:JSON.stringify({nombre_modelo:f.get('nombre_modelo'), ruta_modelo:f.get('ruta_modelo'), documentos_entrenamiento:Number(f.get('documentos_entrenamiento') || 0), activar:f.get('activar') === 'on', observaciones:f.get('observaciones'), metricas:{f1_entidades:Number(f.get('f1_entidades') || 0)}})}); e.currentTarget.reset(); await cargarTipos(); };
-        document.getElementById('form-entrenamiento').onsubmit = async e => { e.preventDefault(); const respuesta = await fetch(`/admin/tipos-documento/${tipoSeleccionado}/documentos-entrenamiento`, {method:'POST', headers:{'X-Admin-Token':tokenAdmin()}, body:new FormData(e.currentTarget)}); const data = await respuesta.json(); if (!respuesta.ok) throw new Error(data.error); document.getElementById('texto-ocr-entrenamiento').value = data.documento_entrenamiento.texto_ocr || ''; await cargarDocumentosEntrenamiento(); };
-        document.getElementById('texto-ocr-entrenamiento').onmouseup = e => { const t = e.currentTarget; if (t.selectionEnd > t.selectionStart) { rangoSeleccionado = {inicio:t.selectionStart, fin:t.selectionEnd}; document.getElementById('texto-anotado').value = t.value.substring(t.selectionStart, t.selectionEnd).trim(); } };
-        document.getElementById('guardar-anotacion').onclick = async () => { const sel = document.getElementById('campo-anotacion'); const opt = sel.options[sel.selectedIndex]; await apiJson(`/admin/documentos-entrenamiento/${documentoEntrenamientoSeleccionado}/anotaciones`, {method:'POST', admin:true, body:JSON.stringify({clave_campo:sel.value, etiqueta_entidad:opt.dataset.etiqueta, texto_anotado:document.getElementById('texto-anotado').value, posicion_inicio:rangoSeleccionado.inicio, posicion_fin:rangoSeleccionado.fin})}); await cargarDocumentosEntrenamiento(); };
-        cargarTodo().catch(e => mostrarEstado(e.message, 'error'));
-    </script>
+    <script src="/static/admin.js"></script>
 </body>
 </html>
