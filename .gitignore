@@ -43,4 +43,6 @@ venv/
 *.log
 
 # Scripts used only to generate the residency report/documents
-/tools/
+!/tools/
+/tools/*
+!/tools/pipeline_docling_100.py

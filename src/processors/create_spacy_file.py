@@ -31,6 +31,16 @@ from tqdm import tqdm
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from config import DATA_DIR
 
+
+def cargar_tokenizador_espanol(logger):
+    for modelo in ["es_core_news_lg", "es_core_news_md", "es_core_news_sm"]:
+        try:
+            return spacy.load(modelo)
+        except OSError:
+            logger.warning(f"Modelo spaCy no instalado: {modelo}")
+    logger.warning("Usando tokenizador blanco de spaCy para espanol.")
+    return spacy.blank("es")
+
 def run_create_spacy_file():
     """
     Convierte datos en formato JSON a un archivo binario .spacy para un
@@ -44,15 +54,8 @@ def run_create_spacy_file():
         logger.error(f"Archivo de datos JSON no encontrado en: {json_path}")
         raise FileNotFoundError(f"No se encontró {json_path}. Ejecuta el paso anterior del pipeline.")
 
-    # Cargar un modelo base de español para usar su tokenizador.
-    # Esto es crucial para asegurar que la alineación sea correcta.
-    try:
-        nlp = spacy.load("es_core_news_lg")
-    except OSError:
-        print("\n[Error] Modelo 'es_core_news_lg' no encontrado.")
-        print("Por favor, ejecute: python -m spacy download es_core_news_lg\n")
-        sys.exit(1)
-        
+    nlp = cargar_tokenizador_espanol(logger)
+
     db = DocBin() # Crear un colector de documentos binarios
 
     with open(json_path, 'r', encoding='utf-8') as f:

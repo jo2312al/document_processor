@@ -9,6 +9,14 @@ import locale
 import mysql.connector
 from mysql.connector import Error
 
+CARRERAS_RESPALDO = [
+    "INGENIERIA EN SISTEMAS COMPUTACIONALES",
+    "INGENIERIA INDUSTRIAL",
+    "INGENIERIA CIVIL",
+    "INGENIERIA EN GESTION EMPRESARIAL",
+    "LICENCIATURA EN ADMINISTRACION",
+]
+
 # --- Configuración de rutas y logging ---
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
 try:
@@ -73,7 +81,11 @@ def generate_test_data(num_records, db_connector=None):
     owns_connector = db_connector is None
     if db_connector is None:
         db_connector = DBConnector()
-        db_connector.connect()
+        try:
+            db_connector.connect()
+        except Error:
+            logger.warning("MySQL no disponible; usando carreras de respaldo.")
+            db_connector = None
     output_csv = os.path.join(DATA_DIR, 'datos_prueba.csv')
     names_surnames_csv = os.path.join(DATA_DIR, 'nombres_apellidos.csv')
     
@@ -92,9 +104,9 @@ def generate_test_data(num_records, db_connector=None):
         
     names_surnames = pd.read_csv(names_surnames_csv, encoding='utf-8')
     try:
-        carreras_list = db_connector.get_carreras()
+        carreras_list = db_connector.get_carreras() if db_connector else CARRERAS_RESPALDO
     finally:
-        if owns_connector:
+        if owns_connector and db_connector:
             db_connector.close()
 
     if not carreras_list:

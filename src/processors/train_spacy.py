@@ -55,7 +55,7 @@ def run_training():
     # 2. Modificar la configuración con nuestros parámetros deseados
     config["paths"]["train"] = training_data_path
     config["paths"]["dev"] = dev_data_path
-    config["paths"]["vectors"] = "es_core_news_md" # Usar el modelo mediano, más rápido
+    config["paths"]["vectors"] = None
     config["training"]["max_epochs"] = 15  # ¡CRÍTICO! Forzar las 15 épocas
     config["training"]["patience"] = 16    # Paciencia > max_epochs para asegurar que no se detenga
     

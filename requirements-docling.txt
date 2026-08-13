@@ -1,0 +1,6 @@
+﻿# Docling completo requiere torch y dependencias grandes.
+# No recomendado para Azure/AWS B2s: durante la prueba intento descargar torch >500 MB.
+# Usarlo en VM mas grande o con imagen preparada.
+# docling>=2.119.0
+
+# En B2s el sistema conserva Tesseract y fallback automatico si Docling no esta disponible.

@@ -33,12 +33,17 @@ class PDFGenerator:
         self.logger = logging.getLogger("pipeline.pdf_generator")
 
     def clear_directories(self):
-        """Limpia los directorios de salida antes de generar nuevos archivos."""
-        self.logger.info("Limpiando directorios de salida para PDFs y etiquetas...")
-        for dir_to_clear in [self.output_dir, self.labels_dir]:
-            if os.path.exists(dir_to_clear):
-                shutil.rmtree(dir_to_clear)
-            os.makedirs(dir_to_clear, exist_ok=True)
+        """Limpia solo archivos generados por el pipeline, no reportes DOCX."""
+        self.logger.info("Limpiando PDFs generados y etiquetas del pipeline...")
+        os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(self.labels_dir, exist_ok=True)
+        self._remove_files_by_extension(self.output_dir, ".pdf")
+        self._remove_files_by_extension(self.labels_dir, ".json")
+
+    def _remove_files_by_extension(self, directory, extension):
+        for file_name in os.listdir(directory):
+            if file_name.lower().endswith(extension):
+                os.remove(os.path.join(directory, file_name))
 
     def _embed_image(self, pdf, image_path, x, y, w=0, h=0):
         """Inserta una imagen en el PDF, convirtiendo formatos si es necesario."""

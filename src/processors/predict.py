@@ -1,18 +1,9 @@
-# ==============================================================================
-# SCRIPT: predict.py (Versión Final para API)
+﻿# ==============================================================================
+# SCRIPT: predict.py
 #
-# PROPÓSITO:
-# Este es el script de inferencia, diseñado para ser llamado por otros
-# programas (como api.py). Toma un PDF, lo procesa y devuelve los datos
-# extraídos en formato de diccionario Python (JSON).
-#
-# CAMBIOS FINALES:
-# - (CRÍTICO) La función `predict_entities` ahora utiliza `return` para
-#   devolver el diccionario `final_json`, en lugar de imprimirlo. Esto es
-#   esencial para que la API de Flask pueda capturar el resultado.
-# - Se ha limpiado la salida en la consola para que el script se enfoque en
-#   retornar el valor. La lógica de guardar un archivo JSON de salida se
-#   ha comentado, ya que la API se encargará de la respuesta.
+# PROPOSITO:
+# Script de inferencia para la API. Recibe un PDF, aplica OCR y usa el modelo
+# spaCy activo del tipo documental indicado para devolver campos estructurados.
 # ==============================================================================
 
 import os
@@ -21,22 +12,29 @@ import json
 import logging
 import argparse
 import spacy
-import cv2
-import numpy as np
-import subprocess
-import tempfile
 import re
 from pdf2image import convert_from_path
 
-# --- Configuración de rutas y logging ---
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from config import BASE_DIR, MODELS_DIR, LOGS_DIR, LOGGING_FORMAT, LOGGING_LEVEL, TESSERACT_CMD, POPPLER_PATH
+from config import LOGS_DIR, LOGGING_FORMAT, LOGGING_LEVEL, TESSERACT_CMD
+from src.services.gestor_tipos_documento import (
+    TipoDocumentoNoEncontrado,
+    construir_campos_extraidos,
+    obtener_ruta_modelo_activo,
+    obtener_tipo_documento,
+)
+from src.services.gestor_aprendizaje_activo import (
+    calcular_confianza_campos,
+    registrar_revision_si_aplica,
+)
+from src.services.gestor_preprocesamiento_documental import (
+    ejecutar_tesseract,
+    extraer_texto_documento,
+    limpiar_imagen_para_ocr,
+)
 
-# Definir rutas
-MODEL_DIR = os.path.join(MODELS_DIR, 'spacy_model')
 LOG_FILE = os.path.join(LOGS_DIR, 'predict.log')
 
-# Configurar logging
 logging.basicConfig(
     filename=LOG_FILE,
     level=getattr(logging, LOGGING_LEVEL),
@@ -45,114 +43,140 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 def preprocess_image_for_ocr(image):
-    """Limpia y pre-procesa una imagen para maximizar la precisión del OCR."""
-    img_cv = np.array(image.convert('L'))
-    img_cv = cv2.convertScaleAbs(img_cv, alpha=1.2, beta=0)
-    _, thresh = cv2.threshold(img_cv, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    return thresh
+    """Conserva compatibilidad con codigo anterior de entrenamiento."""
+    return limpiar_imagen_para_ocr(image)
+
 
 def execute_ocr_safely(image_array, lang='spa', timeout=90):
-    """Ejecuta Tesseract de forma segura usando un archivo temporal y un subproceso."""
-    with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_image:
-        temp_path = temp_image.name
-    
+    """Conserva compatibilidad con codigo anterior de entrenamiento."""
+    return ejecutar_tesseract(image_array, lang, timeout)
+
+
+def normalizar_texto_ocr(texto_ocr):
+    """Compacta espacios para entregar texto estable al modelo spaCy."""
+    return re.sub(r'\s+', ' ', texto_ocr).strip()
+
+
+def recolectar_entidades(doc):
+    """Convierte entidades spaCy en diccionario usando la primera coincidencia."""
+    entidades = {}
+    for entidad in doc.ents:
+        entidades.setdefault(entidad.label_, entidad.text.strip())
+    return entidades
+
+
+def construir_resumen_tipo(tipo_documento):
+    """Reduce la configuracion del tipo documental para la respuesta publica."""
+    return {
+        "id_tipo_documento": tipo_documento["id_tipo_documento"],
+        "nombre": tipo_documento["nombre"],
+        "modelo_activo": tipo_documento["modelo_activo"],
+    }
+
+
+def obtener_dimensiones_pagina(resultado_preprocesamiento):
+    """Devuelve dimensiones si el preprocesador genero imagen de pagina."""
+    pagina = resultado_preprocesamiento.get("pagina")
+    if not pagina:
+        return None
+    return {"width": pagina.width, "height": pagina.height}
+
+
+def predict_entities(pdf_path, id_tipo_documento=None, metodo_preprocesamiento=None):
+    """
+    Carga el modelo spaCy activo del tipo documental, extrae entidades de un PDF
+    y devuelve el resultado en formato compatible con la API.
+    """
+    logger.info(f"--- Iniciando prediccion para el archivo: {pdf_path} ---")
+
     try:
-        cv2.imwrite(temp_path, image_array)
-        
-        command = [TESSERACT_CMD, temp_path, 'stdout', '-l', lang, '--psm', '6']
-        
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            encoding='utf-8',
-            errors='replace',
-            timeout=timeout
-        )
+        tipo_documento = obtener_tipo_documento(id_tipo_documento)
+        ruta_modelo = obtener_ruta_modelo_activo(tipo_documento)
+    except TipoDocumentoNoEncontrado as e:
+        logger.error(str(e))
+        return {"error": str(e)}
+    except Exception as e:
+        logger.error(f"No se pudo obtener la configuracion documental: {e}")
+        return {"error": f"No se pudo obtener la configuracion documental: {e}"}
 
-        if result.returncode != 0:
-            logger.error(f"Tesseract falló con el código {result.returncode}. Error: {result.stderr}")
-            raise RuntimeError(f"Tesseract error: {result.stderr}")
-
-        return result.stdout
-
-    finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-
-def predict_entities(pdf_path):
-    """
-    Carga el modelo spaCy entrenado, extrae entidades de un PDF y devuelve el resultado.
-    """
-    logger.info(f"--- Iniciando predicción para el archivo: {pdf_path} ---")
-
-    if not os.path.exists(MODEL_DIR):
-        logger.error(f"El directorio del modelo no fue encontrado en: {MODEL_DIR}")
+    if not os.path.exists(ruta_modelo):
+        logger.error(f"El directorio del modelo no fue encontrado en: {ruta_modelo}")
         return {"error": "Modelo no encontrado. Ejecuta el pipeline de entrenamiento primero."}
 
     try:
-        nlp = spacy.load(MODEL_DIR)
-        logger.info("Modelo spaCy cargado exitosamente.")
+        nlp = spacy.load(ruta_modelo)
+        logger.info(f"Modelo spaCy cargado exitosamente desde: {ruta_modelo}")
     except Exception as e:
-        logger.error(f"No se pudo cargar el modelo desde {MODEL_DIR}: {e}")
+        logger.error(f"No se pudo cargar el modelo desde {ruta_modelo}: {e}")
         return {"error": f"No se pudo cargar el modelo: {e}"}
 
     try:
-        # 1. Conversión y OCR
-        images = convert_from_path(pdf_path, dpi=200, poppler_path=POPPLER_PATH)
-        image = images[0]
-        processed_image = preprocess_image_for_ocr(image)
-        ocr_text = execute_ocr_safely(processed_image)
-        cleaned_text = re.sub(r'\s+', ' ', ocr_text).strip()
-        
+        resultado_preprocesamiento = extraer_texto_documento(
+            pdf_path,
+            tipo_documento,
+            metodo_preprocesamiento,
+        )
+        cleaned_text = normalizar_texto_ocr(resultado_preprocesamiento["texto"])
     except Exception as e:
         logger.error(f"Fallo en la fase de procesamiento de PDF/OCR: {e}", exc_info=True)
         return {"error": f"Fallo al procesar el PDF: {e}"}
 
-    # 2. Predicción con el modelo
     doc = nlp(cleaned_text)
-    
-    # 3. Formateo de resultados
-    results = {}
-    for ent in doc.ents:
-        if ent.label_ not in results:
-            value = ent.text.strip()
-            results[ent.label_] = value
+    entidades_detectadas = recolectar_entidades(doc)
 
+    campos_extraidos, campos_faltantes = construir_campos_extraidos(
+        tipo_documento,
+        entidades_detectadas,
+    )
+
+    confianza_global = calcular_confianza_campos(campos_extraidos)
     final_json = {
-        "fields": {
-            "alu_matricula": {"value": results.get("MATRICULA", "NO ENCONTRADO")},
-            "alu_nombre": {"value": results.get("NOMBRE", "NO ENCONTRADO")},
-            "alu_paterno": {"value": results.get("PATERNO", "NO ENCONTRADO")},
-            "alu_materno": {"value": results.get("MATERNO", "NO ENCONTRADO")},
-            "alu_carrera": {"value": results.get("CARRERA", "NO ENCONTRADO")},
-            "alu_servicio": {"value": results.get("SERVICIO", "NO ENCONTRADO")}
+        "tipo_documento": construir_resumen_tipo(tipo_documento),
+        "fields": campos_extraidos,
+        "campos_faltantes": campos_faltantes,
+        "confianza_global": confianza_global,
+        "preprocesamiento": {
+            "metodo": resultado_preprocesamiento["metodo"],
+            "advertencias": resultado_preprocesamiento.get("advertencias", []),
         },
-        "image_dimensions": {"width": image.width, "height": image.height}
+        "image_dimensions": obtener_dimensiones_pagina(resultado_preprocesamiento),
     }
-    
-    logger.info(f"Predicción finalizada. Resultado: {final_json}")
-    
-    # --- ¡CAMBIO CRÍTICO! Se retorna el JSON para que la API lo use ---
+    evento_revision = registrar_revision_si_aplica(
+        tipo_documento["id_tipo_documento"],
+        os.path.basename(pdf_path),
+        final_json,
+    )
+    final_json["requiere_revision"] = evento_revision is not None
+
+    logger.info(f"Prediccion finalizada. Resultado: {final_json}")
     return final_json
 
+
 if __name__ == "__main__":
-    # Esta parte permite seguir usando el script desde la línea de comandos para pruebas rápidas
-    parser = argparse.ArgumentParser(description="Extrae entidades de un documento PDF usando un modelo spaCy entrenado.")
+    parser = argparse.ArgumentParser(
+        description="Extrae entidades de un documento PDF usando un modelo spaCy entrenado."
+    )
     parser.add_argument("pdf_path", type=str, help="Ruta al archivo PDF a procesar.")
+    parser.add_argument(
+        "--tipo-documento",
+        type=str,
+        default=None,
+        help="ID del tipo documental a procesar.",
+    )
     args = parser.parse_args()
 
     if not TESSERACT_CMD or not os.path.exists(TESSERACT_CMD):
-        print("Error: La ruta al ejecutable de Tesseract no está configurada correctamente en 'config.py'.")
+        print("Error: La ruta al ejecutable de Tesseract no esta configurada correctamente en 'config.py'.")
     elif not os.path.exists(args.pdf_path):
         print(f"Error: El archivo no fue encontrado en la ruta '{args.pdf_path}'")
     else:
         try:
-            # Para pruebas, el resultado se imprimirá en la consola
-            prediction_result = predict_entities(args.pdf_path)
+            prediction_result = predict_entities(args.pdf_path, args.tipo_documento)
             print("\n--- JSON Final ---")
             print(json.dumps(prediction_result, indent=2, ensure_ascii=False))
         except Exception as e:
-            logger.critical(f"Error fatal durante la predicción en modo script: {e}", exc_info=True)
+            logger.critical(f"Error fatal durante la prediccion en modo script: {e}", exc_info=True)
             raise
+
