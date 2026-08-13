@@ -1,96 +1,135 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consola de aprendizaje documental</title>
-    <style>
+        <style>
         :root {
             color-scheme: light;
-            --fondo: #f3f6f8;
+            --fondo: #eef3f7;
+            --fondo-tinta: #dfe9f1;
             --panel: #ffffff;
-            --panel-suave: #f8fafc;
-            --linea: #d6dee8;
-            --texto: #182230;
-            --muted: #667085;
-            --azul: #1f5eff;
-            --azul-suave: #e8efff;
-            --verde: #067647;
-            --verde-suave: #dcfae6;
-            --ambar: #b54708;
-            --ambar-suave: #fff4d6;
+            --panel-suave: #f7fafc;
+            --linea: #c9d6e2;
+            --linea-fuerte: #9fb2c5;
+            --texto: #162333;
+            --muted: #5e6d7d;
+            --azul: #1457d9;
+            --azul-profundo: #0b367f;
+            --azul-suave: #e7f0ff;
+            --verde: #087443;
+            --verde-suave: #e4f8ec;
+            --ambar: #a65f00;
+            --ambar-suave: #fff3cf;
             --rojo: #b42318;
             --rojo-suave: #fee4e2;
-            --tinta: #101828;
+            --sombra: 0 18px 45px rgba(16, 35, 55, .08);
+            --radio: 8px;
         }
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: Inter, Arial, sans-serif; background: var(--fondo); color: var(--texto); }
-        h1, h2, h3, p { margin: 0; }
-        h1 { font-size: 26px; letter-spacing: 0; }
-        h2 { font-size: 18px; }
-        h3 { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-        a { color: var(--azul); font-weight: 700; text-decoration: none; }
-        label { display: grid; gap: 6px; font-size: 13px; font-weight: 700; color: #344054; }
-        input, select, textarea {
-            width: 100%; border: 1px solid #b8c4d3; border-radius: 7px; background: white;
-            padding: 10px 11px; min-height: 40px; color: var(--texto); font: inherit;
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, var(--fondo) 0%, #f8fbfd 48%, var(--fondo-tinta) 100%);
+            color: var(--texto);
+            font-family: "Segoe UI", Inter, Arial, sans-serif;
         }
-        textarea { min-height: 92px; resize: vertical; }
+        h1, h2, h3, p { margin: 0; }
+        h1 { font-size: 28px; line-height: 1.12; letter-spacing: 0; }
+        h2 { font-size: 20px; line-height: 1.25; }
+        h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+        a { color: var(--azul); font-weight: 800; text-decoration: none; }
+        label { display: grid; gap: 7px; font-size: 13px; font-weight: 750; color: #314156; }
+        input, select, textarea {
+            width: 100%; min-height: 42px; padding: 10px 12px;
+            border: 1px solid var(--linea-fuerte); border-radius: var(--radio);
+            background: white; color: var(--texto); font: inherit;
+        }
+        textarea { min-height: 104px; resize: vertical; }
+        input:focus, select:focus, textarea:focus, button:focus-visible {
+            outline: 3px solid rgba(20, 87, 217, .18); outline-offset: 2px;
+        }
         button {
-            border: 0; border-radius: 7px; padding: 10px 14px; min-height: 40px;
+            min-height: 42px; border: 0; border-radius: var(--radio); padding: 10px 15px;
             background: var(--azul); color: white; font: inherit; font-weight: 800; cursor: pointer;
         }
-        button.secundario { background: #475467; }
-        button.fantasma { background: white; border: 1px solid #b8c4d3; color: var(--texto); }
-        button.tab { background: transparent; color: var(--muted); text-align: left; border-left: 3px solid transparent; border-radius: 0; }
-        button.tab.activo { color: var(--azul); background: var(--azul-suave); border-left-color: var(--azul); }
-        button:disabled { background: #98a2b3; cursor: not-allowed; }
-        code, pre { font-family: Consolas, monospace; }
-        pre { white-space: pre-wrap; word-break: break-word; margin: 0; border-radius: 7px; padding: 12px; background: #111827; color: #e5e7eb; font-size: 12px; }
-        .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
-        .sidebar { background: var(--tinta); color: white; padding: 22px; display: flex; flex-direction: column; gap: 18px; }
-        .brand { display: grid; gap: 8px; }
-        .brand p { color: #cbd5e1; line-height: 1.4; font-size: 13px; }
-        .token { display: grid; gap: 9px; padding: 14px; border: 1px solid #344054; border-radius: 8px; background: #182230; }
-        .token label { color: #e5e7eb; }
-        .nav { display: grid; gap: 4px; }
-        .contenido { padding: 24px; display: grid; gap: 18px; align-content: start; }
-        .cabecera { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: 18px; display: grid; gap: 14px; }
-        .cabecera-top { display: flex; justify-content: space-between; gap: 14px; align-items: start; flex-wrap: wrap; }
-        .resumen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-        .dato { background: var(--panel-suave); border: 1px solid var(--linea); border-radius: 8px; padding: 12px; }
-        .dato strong { display: block; font-size: 20px; margin-top: 4px; }
-        .panel { background: var(--panel); border: 1px solid var(--linea); border-radius: 8px; padding: 18px; }
+        button:hover { filter: brightness(.97); transform: translateY(-1px); }
+        button.secundario { background: var(--azul-profundo); }
+        button.fantasma { background: white; border: 1px solid var(--linea-fuerte); color: var(--texto); }
+        button.tab {
+            display: grid; grid-template-columns: 30px 1fr; align-items: center; gap: 10px;
+            background: transparent; color: #344054; text-align: left; border: 1px solid transparent;
+            border-radius: var(--radio); padding: 11px 12px;
+        }
+        button.tab::before {
+            content: attr(data-paso); display: grid; place-items: center;
+            width: 28px; height: 28px; border-radius: 999px;
+            background: #edf3f8; color: #53677d; font-size: 12px; font-weight: 900;
+        }
+        button.tab.activo { color: var(--azul-profundo); background: var(--azul-suave); border-color: #bad0ff; }
+        button.tab.activo::before { background: var(--azul); color: white; }
+        button:disabled { background: #98a2b3; cursor: not-allowed; transform: none; }
+        code, pre { font-family: Consolas, "SFMono-Regular", monospace; }
+        pre {
+            white-space: pre-wrap; word-break: break-word; margin: 0; border-radius: var(--radio);
+            padding: 14px; background: #122033; color: #e6edf5; font-size: 12px; line-height: 1.55;
+        }
+        .layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh; }
+        .sidebar {
+            position: sticky; top: 0; height: 100vh; padding: 24px;
+            background: rgba(255,255,255,.86); border-right: 1px solid var(--linea);
+            backdrop-filter: blur(18px); display: flex; flex-direction: column; gap: 20px;
+        }
+        .brand { display: grid; gap: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--linea); }
+        .brand p { color: var(--muted); line-height: 1.45; font-size: 13px; }
+        .token { display: grid; gap: 10px; padding: 15px; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--panel-suave); }
+        .nav { display: grid; gap: 6px; }
+        .contenido { width: min(1240px, 100%); padding: 30px; display: grid; gap: 22px; align-content: start; }
+        .cabecera {
+            position: relative; overflow: hidden; background: var(--panel); border: 1px solid var(--linea);
+            border-radius: var(--radio); padding: 22px; display: grid; gap: 18px; box-shadow: var(--sombra);
+        }
+        .cabecera::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 7px; background: linear-gradient(var(--azul), var(--verde)); }
+        .cabecera-top { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; flex-wrap: wrap; padding-left: 4px; }
+        .resumen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+        .dato { background: var(--panel-suave); border: 1px solid var(--linea); border-radius: var(--radio); padding: 14px; }
+        .dato strong { display: block; font-size: 24px; margin-top: 6px; color: var(--azul-profundo); }
+        .panel { background: rgba(255,255,255,.94); border: 1px solid var(--linea); border-radius: var(--radio); padding: 22px; box-shadow: var(--sombra); }
         .tab-panel { display: none; }
         .tab-panel.activo { display: grid; gap: 18px; }
-        .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-        .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-        .split { display: grid; grid-template-columns: 340px 1fr; gap: 18px; align-items: start; }
-        .stack { display: grid; gap: 14px; }
-        .lista { display: grid; gap: 10px; }
-        .fila, .tipo { border: 1px solid var(--linea); background: var(--panel-suave); border-radius: 8px; padding: 13px; }
+        .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .split { display: grid; grid-template-columns: minmax(280px, 360px) minmax(0, 1fr); gap: 20px; align-items: start; }
+        .stack { display: grid; gap: 16px; }
+        .lista { display: grid; gap: 12px; }
+        .fila, .tipo { border: 1px solid var(--linea); background: var(--panel-suave); border-radius: var(--radio); padding: 15px; }
         .tipo { width: 100%; color: var(--texto); text-align: left; background: white; }
-        .tipo.activo { border-color: #8aa8ff; background: var(--azul-suave); }
-        .fila-titulo { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
-        .muted { color: var(--muted); font-size: 13px; line-height: 1.45; }
-        .badge { display: inline-flex; align-items: center; border: 1px solid #c7d0dd; background: white; border-radius: 999px; padding: 4px 10px; font-size: 12px; color: #475467; font-weight: 800; }
+        .tipo.activo { border-color: #8aa8ff; background: var(--azul-suave); box-shadow: inset 4px 0 0 var(--azul); }
+        .fila-titulo { display: flex; justify-content: space-between; gap: 14px; align-items: center; }
+        .muted { color: var(--muted); font-size: 13px; line-height: 1.5; }
+        .badge {
+            display: inline-flex; align-items: center; border: 1px solid #c7d0dd; background: white;
+            border-radius: 999px; padding: 5px 11px; font-size: 12px; color: #475467; font-weight: 850;
+        }
         .badge.ok { border-color: #75e0a7; background: var(--verde-suave); color: var(--verde); }
         .badge.warn { border-color: #fdb022; background: var(--ambar-suave); color: var(--ambar); }
         .badge.error { border-color: #fda29b; background: var(--rojo-suave); color: var(--rojo); }
-        .vacio { border: 1px dashed #aab7c6; border-radius: 8px; padding: 16px; color: var(--muted); background: white; }
+        .vacio { border: 1px dashed #9fb2c5; border-radius: var(--radio); padding: 18px; color: var(--muted); background: white; }
         .estado { min-height: 22px; font-size: 13px; color: var(--azul); }
         .estado.error { color: var(--rojo); }
         .estado.ok { color: var(--verde); }
-        .ocr { min-height: 270px; font-family: Consolas, monospace; line-height: 1.5; }
+        .ocr { min-height: 320px; font-family: Consolas, monospace; line-height: 1.55; }
         .acciones { display: flex; gap: 10px; flex-wrap: wrap; }
-        .callout { background: #fef7c3; border: 1px solid #fde272; border-radius: 8px; padding: 13px; color: #713b12; }
-        .timeline { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-        .paso { border: 1px solid var(--linea); background: white; border-radius: 8px; padding: 12px; min-height: 76px; }
-        .metricas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-        .metric-card { border: 1px solid var(--linea); border-radius: 8px; padding: 12px; background: white; }
+        .callout { background: #fff8df; border: 1px solid #f4d47c; border-radius: var(--radio); padding: 15px; color: #65410b; line-height: 1.5; }
+        .timeline { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+        .paso { border: 1px solid var(--linea); background: white; border-radius: var(--radio); padding: 14px; min-height: 92px; }
+        .paso strong { color: var(--azul-profundo); }
+        .metricas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .metric-card { border: 1px solid var(--linea); border-radius: var(--radio); padding: 14px; background: white; }
         @media (max-width: 980px) {
             .layout { grid-template-columns: 1fr; }
-            .sidebar { position: static; }
+            .sidebar { position: static; height: auto; }
+            .contenido { padding: 18px; }
             .resumen, .grid2, .grid3, .split, .timeline, .metricas { grid-template-columns: 1fr; }
         }
     </style>
@@ -100,20 +139,20 @@
         <aside class="sidebar">
             <div class="brand">
                 <h1>Consola documental</h1>
-                <p>Extracción, validación y aprendizaje continuo para constancias de servicio social.</p>
+                <p>Panel administrativo para definir documentos, revisar evidencias y controlar modelos OCR/NLP.</p>
             </div>
             <div class="token">
                 <label>Token administrador<input id="token-admin" type="password" placeholder="X-Admin-Token"></label>
                 <button id="guardar-token" class="secundario" type="button">Guardar token</button>
-                <a href="/">Abrir analizador</a>
+                <a href="/analizador">Abrir analizador público</a>
             </div>
             <nav class="nav">
-                <button class="tab activo" type="button" data-tab="documento">Documento</button>
-                <button class="tab" type="button" data-tab="campos">Campos</button>
-                <button class="tab" type="button" data-tab="entrenamiento">Anotación</button>
-                <button class="tab" type="button" data-tab="aprendizaje">Aprendizaje</button>
-                <button class="tab" type="button" data-tab="modelo">Modelos</button>
-                <button class="tab" type="button" data-tab="api">API</button>
+                <button class="tab activo" type="button" data-tab="documento" data-paso="01">Documento</button>
+                <button class="tab" type="button" data-tab="campos" data-paso="02">Campos</button>
+                <button class="tab" type="button" data-tab="entrenamiento" data-paso="03">Anotación</button>
+                <button class="tab" type="button" data-tab="aprendizaje" data-paso="04">Aprendizaje</button>
+                <button class="tab" type="button" data-tab="modelo" data-paso="05">Modelos</button>
+                <button class="tab" type="button" data-tab="api" data-paso="06">API</button>
             </nav>
         </aside>
 
@@ -122,7 +161,7 @@
                 <div class="cabecera-top">
                     <div>
                         <h1 id="detalle-titulo">Selecciona un tipo documental</h1>
-                        <p id="detalle-descripcion" class="muted">El flujo recomendado es configurar campos, recibir documentos validados y entrenar por lotes.</p>
+                        <p id="detalle-descripcion" class="muted">Administra el ciclo completo: estructura del documento, OCR, validación humana, entrenamiento por lotes y publicación del modelo.</p>
                     </div>
                     <div class="acciones">
                         <span id="detalle-estado" class="badge">sin documento</span>

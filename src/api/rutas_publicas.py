@@ -1,4 +1,4 @@
-﻿import json
+import json
 
 from flask import Blueprint, current_app, jsonify, render_template, request
 
@@ -19,8 +19,14 @@ rutas_publicas = Blueprint("rutas_publicas", __name__)
 
 
 @rutas_publicas.route("/", methods=["GET"])
+@rutas_publicas.route("/analizador", methods=["GET"])
 def mostrar_analizador():
     return render_template("analizador.html")
+
+
+@rutas_publicas.route("/admin", methods=["GET"])
+def mostrar_panel_admin():
+    return render_template("admin_panel.html")
 
 
 @rutas_publicas.route("/tipos-documento", methods=["GET"])
