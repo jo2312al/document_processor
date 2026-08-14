@@ -8,12 +8,15 @@ let pasoTipo = 0;
 
 iniciarPanel();
 
-function iniciarPanel() {    conectarEventos();
+function iniciarPanel() {
+    crearToast();
+    conectarEventos();
     cargarTodo().catch(error => mostrarEstado(error.message, 'error'));
 }
 
-function conectarEventos() {    document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => activarTab(tab.dataset.tab));
-    document.getElementById('refrescar-lotes').onclick = cargarLotes;
+function conectarEventos() {
+    document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => activarTab(tab.dataset.tab));
+    document.getElementById('refrescar-lotes').onclick = evento => cargarLotes(true, evento.currentTarget);
     document.getElementById('abrir-wizard-tipo').onclick = abrirWizardTipo;
     document.getElementById('cerrar-wizard-tipo').onclick = cerrarWizardTipo;
     document.querySelectorAll('[data-next-tipo]').forEach(boton => boton.onclick = () => moverWizardTipo(1));
@@ -32,24 +35,82 @@ function conectarEventos() {    document.querySelectorAll('.tab').forEach(tab =>
 function mostrarEstado(mensaje, clase = '') {
     estadoGlobal.textContent = mensaje;
     estadoGlobal.className = `estado ${clase}`;
+    mostrarToast(mensaje, clase);
 }
 
+function crearToast() {
+    if (document.getElementById('toast-admin')) return;
+    const toast = document.createElement('div');
+    toast.id = 'toast-admin';
+    toast.className = 'toast-admin';
+    document.body.appendChild(toast);
+}
 
+function mostrarToast(mensaje, clase = '') {
+    const toast = document.getElementById('toast-admin');
+    if (!toast || !mensaje) return;
+    toast.textContent = mensaje;
+    toast.className = `toast-admin visible ${clase}`;
+    clearTimeout(Number(toast.dataset.timer || 0));
+    toast.dataset.timer = String(setTimeout(() => toast.classList.remove('visible'), 3200));
+}
+
+function iniciarAccion(boton, texto = 'Procesando...') {
+    if (!boton) return () => {};
+    const textoOriginal = boton.textContent;
+    boton.disabled = true;
+    boton.textContent = texto;
+    return () => { boton.disabled = false; boton.textContent = textoOriginal; };
+}
 function activarTab(tabId) {
     document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('activo', tab.dataset.tab === tabId));
     document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('activo', panel.id === `tab-${tabId}`));
     if (tabId === 'aprendizaje') cargarLotes();
     if (tabId === 'api') cargarApiKeys();
+    mostrarEstado(`Vista ${nombreTab(tabId)} abierta.`, 'ok');
+}
+
+function nombreTab(tabId) {
+    const nombres = {
+        documento:'Documento',
+        campos:'Campos',
+        plantilla:'Plantilla',
+        entrenamiento:'Anotacion',
+        aprendizaje:'Aprendizaje',
+        modelo:'Modelos',
+        api:'API'
+    };
+    return nombres[tabId] || tabId;
+}
+
+function exigirTipoSeleccionado() {
+    if (tipoSeleccionado) return true;
+    mostrarEstado('Primero crea o selecciona un tipo documental.', 'error');
+    return false;
 }
 
 async function apiJson(url, opciones = {}) {
     const headers = opciones.headers || {};
-    if (opciones.body) headers['Content-Type'] = 'application/json';    const respuesta = await fetch(url, {...opciones, headers});
-    const data = await respuesta.json();
+    if (opciones.body) headers['Content-Type'] = 'application/json';
+    const respuesta = await fetch(url, {...opciones, headers});
+    const data = await leerRespuestaJson(respuesta);
     if (!respuesta.ok) throw new Error(data.error || 'Operacion no completada');
     return data;
 }
 
+async function apiForm(url, formData) {
+    const respuesta = await fetch(url, {method:'POST', body:formData});
+    const data = await leerRespuestaJson(respuesta);
+    if (!respuesta.ok) throw new Error(data.error || 'Operacion no completada');
+    return data;
+}
+
+async function leerRespuestaJson(respuesta) {
+    const tipo = respuesta.headers.get('content-type') || '';
+    if (tipo.includes('application/json')) return respuesta.json();
+    if (respuesta.url.includes('/login')) throw new Error('La sesion vencio. Vuelve a iniciar sesion.');
+    return {error:'Respuesta inesperada del servidor'};
+}
 async function cargarTodo() {
     await cargarTipos();
     await cargarDocumentosEntrenamiento();
@@ -97,6 +158,8 @@ async function seleccionarTipo(idTipo, tabDestino = 'documento') {
     activarTab(tabDestino);
     await cargarDocumentosEntrenamiento();
     await cargarLotes();
+    const tipo = tiposDocumento.find(item => item.id_tipo_documento === idTipo);
+    mostrarEstado(`${tipo?.nombre || 'Documento'} seleccionado.`, 'ok');
 }
 
 function renderDetalle() {
@@ -192,15 +255,21 @@ function crearDocumentoVista(doc) {
 function seleccionarDocumentoEntrenamiento(doc) {
     documentoEntrenamientoSeleccionado = doc.id_documento_entrenamiento;
     document.getElementById('texto-ocr-entrenamiento').value = doc.texto_ocr || '';
+    mostrarEstado(`OCR cargado: ${doc.nombre_archivo}.`, 'ok');
 }
 
-async function cargarLotes() {
+async function cargarLotes(notificar = false, boton = null) {
     if (!tipoSeleccionado) return;
+    const restaurar = notificar ? iniciarAccion(boton, 'Actualizando...') : () => {};
     try {
         const data = await apiJson(`/admin/aprendizaje/lotes?id_tipo_documento=${tipoSeleccionado}`, {admin:true});
         renderLotes(data.aprendizaje?.lotes || []);
-    } catch {
+        if (notificar) mostrarEstado('Lotes actualizados.', 'ok');
+    } catch (error) {
         document.getElementById('lista-lotes').innerHTML = '<div class="vacio">Inicia sesion para ver lotes.</div>';
+        if (notificar) mostrarEstado(error.message, 'error');
+    } finally {
+        restaurar();
     }
 }
 
@@ -217,7 +286,7 @@ function crearLote(lote) {
     const div = document.createElement('div');
     div.className = 'fila stack';
     div.innerHTML = htmlLote(lote);
-    div.querySelector('button').onclick = () => entrenarLote(lote.id_lote);
+    div.querySelector('button').onclick = evento => entrenarLote(lote.id_lote, evento.currentTarget);
     return div;
 }
 
@@ -241,13 +310,17 @@ function htmlRecomendaciones(lote) {
     return recs.length ? `<div class="callout">${recs.join('<br>')}</div>` : '';
 }
 
-async function entrenarLote(idLote) {
+async function entrenarLote(idLote, boton = null) {
+    const restaurar = iniciarAccion(boton, 'Enviando...');
     try {
-        mostrarEstado('Entrenamiento enviado a cola.', '');
+        mostrarEstado('Enviando lote a entrenamiento...', '');
         await apiJson(`/admin/aprendizaje/lotes/${idLote}/entrenar`, {method:'POST', admin:true});
         await cargarLotes();
+        mostrarEstado('Lote enviado a entrenamiento.', 'ok');
     } catch (error) {
         mostrarEstado(error.message, 'error');
+    } finally {
+        restaurar();
     }
 }
 
@@ -284,15 +357,18 @@ function abrirWizardTipo() {
     pasoTipo = 0;
     document.getElementById('modal-tipo').classList.add('activo');
     mostrarPasoTipo();
+    mostrarEstado('Asistente de creacion abierto.', 'ok');
 }
 
 function cerrarWizardTipo() {
     document.getElementById('modal-tipo').classList.remove('activo');
+    mostrarEstado('Asistente cerrado.', '');
 }
 
 function moverWizardTipo(direccion) {
     pasoTipo = Math.max(0, Math.min(3, pasoTipo + direccion));
     mostrarPasoTipo();
+    mostrarEstado(`Paso ${pasoTipo + 1} de 4.`, 'ok');
 }
 
 function mostrarPasoTipo() {
@@ -308,11 +384,19 @@ function actualizarResumenTipo() {
 
 async function crearTipoDesdeWizard(evento) {
     evento.preventDefault();
-    const form = new FormData(evento.currentTarget);
-    await apiJson('/admin/tipos-documento', {method:'POST', admin:true, body:JSON.stringify(datosTipo(form))});
-    evento.currentTarget.reset();
-    cerrarWizardTipo();
-    await cargarTipos();
+    const restaurar = iniciarAccion(evento.submitter, 'Creando...');
+    try {
+        const form = new FormData(evento.currentTarget);
+        await apiJson('/admin/tipos-documento', {method:'POST', admin:true, body:JSON.stringify(datosTipo(form))});
+        evento.currentTarget.reset();
+        cerrarWizardTipo();
+        await cargarTipos();
+        mostrarEstado('Tipo documental creado.', 'ok');
+    } catch (error) {
+        mostrarEstado(error.message, 'error');
+    } finally {
+        restaurar();
+    }
 }
 
 function datosTipo(form) {
@@ -321,11 +405,18 @@ function datosTipo(form) {
 
 async function enviarPlantilla(evento) {
     evento.preventDefault();
-    const respuesta = await fetch(`/admin/tipos-documento/${tipoSeleccionado}/plantillas`, {method:'POST', body:new FormData(evento.currentTarget)});
-    const data = await respuesta.json();
-    if (!respuesta.ok) throw new Error(data.error || 'No se pudo crear la plantilla');
-    renderPlantillaCreada(data.plantilla);
-    await cargarTipos();
+    if (!exigirTipoSeleccionado()) return;
+    const restaurar = iniciarAccion(evento.submitter, 'Leyendo OCR...');
+    try {
+        const data = await apiForm(`/admin/tipos-documento/${tipoSeleccionado}/plantillas`, new FormData(evento.currentTarget));
+        renderPlantillaCreada(data.plantilla);
+        await cargarTipos();
+        mostrarEstado('Plantilla creada desde OCR.', 'ok');
+    } catch (error) {
+        mostrarEstado(error.message, 'error');
+    } finally {
+        restaurar();
+    }
 }
 
 function renderPlantillaCreada(plantilla) {
@@ -340,20 +431,37 @@ function htmlCampoPlantilla(campo) {
 
 async function crearApiKey(evento) {
     evento.preventDefault();
-    const form = new FormData(evento.currentTarget);
-    const data = await apiJson('/admin/api-keys', {method:'POST', admin:true, body:JSON.stringify({nombre:form.get('nombre'), permisos:['extract']})});
-    ultimaApiKey = data.api_key;
-    document.getElementById('api-key-valor').textContent = data.api_key;
-    document.getElementById('api-key-generada').style.display = 'grid';
-    await cargarApiKeys();
+    const restaurar = iniciarAccion(evento.submitter, 'Generando...');
+    try {
+        const form = new FormData(evento.currentTarget);
+        const data = await apiJson('/admin/api-keys', {method:'POST', admin:true, body:JSON.stringify({nombre:form.get('nombre'), permisos:['extract']})});
+        ultimaApiKey = data.api_key;
+        document.getElementById('api-key-valor').textContent = data.api_key;
+        document.getElementById('api-key-generada').style.display = 'grid';
+        await cargarApiKeys();
+        mostrarEstado('API key generada. Copiala ahora, no se volvera a mostrar completa.', 'ok');
+    } catch (error) {
+        mostrarEstado(error.message, 'error');
+    } finally {
+        restaurar();
+    }
 }
 
 async function crearCampo(evento) {
     evento.preventDefault();
-    const form = new FormData(evento.currentTarget);
-    await apiJson(`/admin/tipos-documento/${tipoSeleccionado}/campos`, {method:'POST', admin:true, body:JSON.stringify(datosCampo(form))});
-    evento.currentTarget.reset();
-    await cargarTipos();
+    if (!exigirTipoSeleccionado()) return;
+    const restaurar = iniciarAccion(evento.submitter, 'Agregando...');
+    try {
+        const form = new FormData(evento.currentTarget);
+        await apiJson(`/admin/tipos-documento/${tipoSeleccionado}/campos`, {method:'POST', admin:true, body:JSON.stringify(datosCampo(form))});
+        evento.currentTarget.reset();
+        await cargarTipos();
+        mostrarEstado('Campo agregado al documento.', 'ok');
+    } catch (error) {
+        mostrarEstado(error.message, 'error');
+    } finally {
+        restaurar();
+    }
 }
 
 function datosCampo(form) {
@@ -362,10 +470,19 @@ function datosCampo(form) {
 
 async function registrarModelo(evento) {
     evento.preventDefault();
-    const form = new FormData(evento.currentTarget);
-    await apiJson(`/admin/tipos-documento/${tipoSeleccionado}/modelos`, {method:'POST', admin:true, body:JSON.stringify(datosModelo(form))});
-    evento.currentTarget.reset();
-    await cargarTipos();
+    if (!exigirTipoSeleccionado()) return;
+    const restaurar = iniciarAccion(evento.submitter, 'Registrando...');
+    try {
+        const form = new FormData(evento.currentTarget);
+        await apiJson(`/admin/tipos-documento/${tipoSeleccionado}/modelos`, {method:'POST', admin:true, body:JSON.stringify(datosModelo(form))});
+        evento.currentTarget.reset();
+        await cargarTipos();
+        mostrarEstado('Modelo registrado.', 'ok');
+    } catch (error) {
+        mostrarEstado(error.message, 'error');
+    } finally {
+        restaurar();
+    }
 }
 
 function datosModelo(form) {
@@ -374,11 +491,19 @@ function datosModelo(form) {
 
 async function subirDocumentoEntrenamiento(evento) {
     evento.preventDefault();
-    const respuesta = await fetch(`/admin/tipos-documento/${tipoSeleccionado}/documentos-entrenamiento`, {method:'POST', body:new FormData(evento.currentTarget)});
-    const data = await respuesta.json();
-    if (!respuesta.ok) throw new Error(data.error);
-    document.getElementById('texto-ocr-entrenamiento').value = data.documento_entrenamiento.texto_ocr || '';
-    await cargarDocumentosEntrenamiento();
+    if (!exigirTipoSeleccionado()) return;
+    const restaurar = iniciarAccion(evento.submitter, 'Procesando OCR...');
+    try {
+        const data = await apiForm(`/admin/tipos-documento/${tipoSeleccionado}/documentos-entrenamiento`, new FormData(evento.currentTarget));
+        document.getElementById('texto-ocr-entrenamiento').value = data.documento_entrenamiento.texto_ocr || '';
+        documentoEntrenamientoSeleccionado = data.documento_entrenamiento.id_documento_entrenamiento;
+        await cargarDocumentosEntrenamiento();
+        mostrarEstado('Documento procesado y OCR cargado.', 'ok');
+    } catch (error) {
+        mostrarEstado(error.message, 'error');
+    } finally {
+        restaurar();
+    }
 }
 
 function capturarSeleccionOcr(evento) {
@@ -389,10 +514,23 @@ function capturarSeleccionOcr(evento) {
 }
 
 async function guardarAnotacion() {
-    const select = document.getElementById('campo-anotacion');
-    const opcion = select.options[select.selectedIndex];
-    await apiJson(`/admin/documentos-entrenamiento/${documentoEntrenamientoSeleccionado}/anotaciones`, {method:'POST', admin:true, body:JSON.stringify(datosAnotacion(select, opcion))});
-    await cargarDocumentosEntrenamiento();
+    if (!documentoEntrenamientoSeleccionado) return mostrarEstado('Selecciona un documento OCR antes de anotar.', 'error');
+    if (!rangoSeleccionado) return mostrarEstado('Selecciona texto dentro del OCR antes de guardar.', 'error');
+    const boton = document.getElementById('guardar-anotacion');
+    const restaurar = iniciarAccion(boton, 'Guardando...');
+    try {
+        const select = document.getElementById('campo-anotacion');
+        const opcion = select.options[select.selectedIndex];
+        await apiJson(`/admin/documentos-entrenamiento/${documentoEntrenamientoSeleccionado}/anotaciones`, {method:'POST', admin:true, body:JSON.stringify(datosAnotacion(select, opcion))});
+        rangoSeleccionado = null;
+        document.getElementById('texto-anotado').value = '';
+        await cargarDocumentosEntrenamiento();
+        mostrarEstado('Anotacion guardada.', 'ok');
+    } catch (error) {
+        mostrarEstado(error.message, 'error');
+    } finally {
+        restaurar();
+    }
 }
 
 function datosAnotacion(select, opcion) {

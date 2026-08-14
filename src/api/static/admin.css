@@ -96,3 +96,26 @@ pre { white-space: pre-wrap; word-break: break-word; margin: 0; border-radius: v
 .login-card { display: grid; gap: 18px; background: rgba(255,255,255,.96); border: 1px solid var(--linea); border-radius: var(--radio); padding: 26px; box-shadow: var(--sombra); }
 .login-brand { border-bottom: 1px solid var(--linea); padding-bottom: 14px; }
 .alerta-error { border: 1px solid var(--rojo-suave); background: var(--rojo-suave); color: var(--rojo); border-radius: var(--radio); padding: 12px; font-weight: 800; }
+button:disabled { opacity: .68; cursor: wait; transform: none; }
+.toast-admin {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 40;
+    max-width: min(420px, calc(100vw - 44px));
+    padding: 13px 16px;
+    border: 1px solid var(--linea);
+    border-radius: var(--radio);
+    background: #ffffff;
+    color: var(--texto);
+    box-shadow: 0 20px 60px rgba(8, 24, 44, .18);
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: opacity .18s ease, transform .18s ease;
+    font-size: 14px;
+    font-weight: 750;
+}
+.toast-admin.visible { opacity: 1; transform: translateY(0); }
+.toast-admin.ok { border-color: #75e0a7; background: var(--verde-suave); color: var(--verde); }
+.toast-admin.error { border-color: #fda29b; background: var(--rojo-suave); color: var(--rojo); }
