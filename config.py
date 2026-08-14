@@ -1,4 +1,4 @@
-﻿import os
+import os
 import platform
 
 
@@ -42,6 +42,9 @@ POPPLER_PATH = os.getenv(
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO")
 ADMIN_API_TOKEN = os.getenv("ADMIN_API_TOKEN")
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD") or ADMIN_API_TOKEN
+SESSION_SECRET_KEY = os.getenv("SESSION_SECRET_KEY") or ADMIN_API_TOKEN or "document-processor-dev"
 CATALOGO_DOCUMENTAL_BACKEND = os.getenv("CATALOGO_DOCUMENTAL_BACKEND", "json").lower()
 TIPO_DOCUMENTO_PREDETERMINADO = os.getenv("TIPO_DOCUMENTO_PREDETERMINADO", "constancia_servicio")
 UMBRAL_LOTE_ENTRENAMIENTO = int(os.getenv("UMBRAL_LOTE_ENTRENAMIENTO", "50"))

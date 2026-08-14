@@ -1,9 +1,15 @@
 import json
 
-from flask import Blueprint, current_app, jsonify, render_template, request
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
 
 from src.api.archivos import eliminar_si_existe, guardar_pdf_temporal, validar_pdf_subido
-from src.api.autenticacion import solicitud_cliente_no_autorizada
+from src.api.autenticacion import (
+    cerrar_sesion_admin,
+    iniciar_sesion_admin,
+    sesion_admin_activa,
+    solicitud_cliente_no_autorizada,
+    validar_credenciales_admin,
+)
 from src.api.respuestas import respuesta_error
 from src.processors.predict import predecir_entidades
 from src.services.despachador_tareas import despachar_entrenamiento_lote
@@ -26,7 +32,22 @@ def mostrar_analizador():
 
 @rutas_publicas.route("/admin", methods=["GET"])
 def mostrar_panel_admin():
+    if not sesion_admin_activa():
+        return redirect(url_for("rutas_publicas.mostrar_login"))
     return render_template("admin_panel.html")
+
+
+@rutas_publicas.route("/login", methods=["GET", "POST"])
+def mostrar_login():
+    if request.method == "POST":
+        return _procesar_login()
+    return render_template("login.html", error=None)
+
+
+@rutas_publicas.route("/logout", methods=["GET", "POST"])
+def cerrar_login():
+    cerrar_sesion_admin()
+    return redirect(url_for("rutas_publicas.mostrar_login"))
 
 
 @rutas_publicas.route("/tipos-documento", methods=["GET"])
@@ -56,6 +77,15 @@ def recibir_documento_validado():
     if error_archivo:
         return respuesta_error(error_archivo, 400)
     return _registrar_pdf_validado(archivo)
+
+
+def _procesar_login():
+    usuario = request.form.get("usuario", "")
+    password = request.form.get("password", "")
+    if validar_credenciales_admin(usuario, password):
+        iniciar_sesion_admin(usuario)
+        return redirect(url_for("rutas_publicas.mostrar_panel_admin"))
+    return render_template("login.html", error="Usuario o contrasena incorrectos"), 401
 
 
 def _registrar_pdf_validado(archivo):

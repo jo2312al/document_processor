@@ -4,13 +4,14 @@ import tempfile
 
 from flask import Flask
 
-from config import LOGGING_FORMAT, LOGGING_LEVEL, LOGS_DIR
+from config import LOGGING_FORMAT, LOGGING_LEVEL, LOGS_DIR, SESSION_SECRET_KEY
 from src.api.rutas_admin import rutas_admin
 from src.api.rutas_publicas import rutas_publicas
 
 
 def crear_aplicacion():
     app = Flask(__name__, template_folder=_ruta_plantillas(), static_folder=_ruta_static())
+    configurar_sesion(app)
     configurar_carga_archivos(app)
     configurar_registro_eventos()
     registrar_rutas(app)
@@ -24,6 +25,12 @@ def _ruta_plantillas():
 
 def _ruta_static():
     return os.path.join(os.path.dirname(__file__), "static")
+
+
+def configurar_sesion(app):
+    app.secret_key = SESSION_SECRET_KEY
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 
 def configurar_carga_archivos(app):

@@ -1,5 +1,4 @@
 const estadoGlobal = document.getElementById('estado-global');
-const tokenInput = document.getElementById('token-admin');
 let tiposDocumento = [];
 let tipoSeleccionado = null;
 let documentoEntrenamientoSeleccionado = null;
@@ -9,15 +8,11 @@ let pasoTipo = 0;
 
 iniciarPanel();
 
-function iniciarPanel() {
-    tokenInput.value = localStorage.getItem('admin_token') || '';
-    conectarEventos();
+function iniciarPanel() {    conectarEventos();
     cargarTodo().catch(error => mostrarEstado(error.message, 'error'));
 }
 
-function conectarEventos() {
-    document.getElementById('guardar-token').onclick = guardarToken;
-    document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => activarTab(tab.dataset.tab));
+function conectarEventos() {    document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => activarTab(tab.dataset.tab));
     document.getElementById('refrescar-lotes').onclick = cargarLotes;
     document.getElementById('abrir-wizard-tipo').onclick = abrirWizardTipo;
     document.getElementById('cerrar-wizard-tipo').onclick = cerrarWizardTipo;
@@ -33,20 +28,12 @@ function conectarEventos() {
     document.getElementById('guardar-anotacion').onclick = guardarAnotacion;
 }
 
-function tokenAdmin() {
-    return tokenInput.value || localStorage.getItem('admin_token') || '';
-}
 
 function mostrarEstado(mensaje, clase = '') {
     estadoGlobal.textContent = mensaje;
     estadoGlobal.className = `estado ${clase}`;
 }
 
-function guardarToken() {
-    localStorage.setItem('admin_token', tokenInput.value);
-    mostrarEstado('Token guardado.', 'ok');
-    cargarTodo();
-}
 
 function activarTab(tabId) {
     document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('activo', tab.dataset.tab === tabId));
@@ -57,9 +44,7 @@ function activarTab(tabId) {
 
 async function apiJson(url, opciones = {}) {
     const headers = opciones.headers || {};
-    if (opciones.body) headers['Content-Type'] = 'application/json';
-    if (opciones.admin) headers['X-Admin-Token'] = tokenAdmin();
-    const respuesta = await fetch(url, {...opciones, headers});
+    if (opciones.body) headers['Content-Type'] = 'application/json';    const respuesta = await fetch(url, {...opciones, headers});
     const data = await respuesta.json();
     if (!respuesta.ok) throw new Error(data.error || 'Operacion no completada');
     return data;
@@ -183,7 +168,7 @@ async function cargarDocumentosEntrenamiento() {
         const data = await apiJson(`/admin/tipos-documento/${tipoSeleccionado}/documentos-entrenamiento`, {admin:true});
         renderDocumentos(data.documentos_entrenamiento || []);
     } catch {
-        document.getElementById('lista-documentos-entrenamiento').innerHTML = '<div class="vacio">Guarda el token para listar documentos.</div>';
+        document.getElementById('lista-documentos-entrenamiento').innerHTML = '<div class="vacio">Inicia sesion para listar documentos.</div>';
     }
 }
 
@@ -215,7 +200,7 @@ async function cargarLotes() {
         const data = await apiJson(`/admin/aprendizaje/lotes?id_tipo_documento=${tipoSeleccionado}`, {admin:true});
         renderLotes(data.aprendizaje?.lotes || []);
     } catch {
-        document.getElementById('lista-lotes').innerHTML = '<div class="vacio">Guarda el token para ver lotes.</div>';
+        document.getElementById('lista-lotes').innerHTML = '<div class="vacio">Inicia sesion para ver lotes.</div>';
     }
 }
 
@@ -271,7 +256,7 @@ async function cargarApiKeys() {
         const data = await apiJson('/admin/api-keys', {admin:true});
         renderApiKeys(data.api_keys || []);
     } catch {
-        document.getElementById('lista-api-keys').innerHTML = '<div class="vacio">Guarda el token.</div>';
+        document.getElementById('lista-api-keys').innerHTML = '<div class="vacio">Inicia sesion.</div>';
     }
     actualizarEjemplosApi();
 }
@@ -336,7 +321,7 @@ function datosTipo(form) {
 
 async function enviarPlantilla(evento) {
     evento.preventDefault();
-    const respuesta = await fetch(`/admin/tipos-documento/${tipoSeleccionado}/plantillas`, {method:'POST', headers:{'X-Admin-Token':tokenAdmin()}, body:new FormData(evento.currentTarget)});
+    const respuesta = await fetch(`/admin/tipos-documento/${tipoSeleccionado}/plantillas`, {method:'POST', body:new FormData(evento.currentTarget)});
     const data = await respuesta.json();
     if (!respuesta.ok) throw new Error(data.error || 'No se pudo crear la plantilla');
     renderPlantillaCreada(data.plantilla);
@@ -389,7 +374,7 @@ function datosModelo(form) {
 
 async function subirDocumentoEntrenamiento(evento) {
     evento.preventDefault();
-    const respuesta = await fetch(`/admin/tipos-documento/${tipoSeleccionado}/documentos-entrenamiento`, {method:'POST', headers:{'X-Admin-Token':tokenAdmin()}, body:new FormData(evento.currentTarget)});
+    const respuesta = await fetch(`/admin/tipos-documento/${tipoSeleccionado}/documentos-entrenamiento`, {method:'POST', body:new FormData(evento.currentTarget)});
     const data = await respuesta.json();
     if (!respuesta.ok) throw new Error(data.error);
     document.getElementById('texto-ocr-entrenamiento').value = data.documento_entrenamiento.texto_ocr || '';
