@@ -62,6 +62,21 @@ function iniciarAccion(boton, texto = 'Procesando...') {
     boton.textContent = texto;
     return () => { boton.disabled = false; boton.textContent = textoOriginal; };
 }
+
+function iniciarFormulario(evento, texto) {
+    const formulario = evento.currentTarget;
+    if (formulario.dataset.enviando === '1') {
+        mostrarEstado('La accion ya se esta procesando. Espera un momento.', '');
+        return null;
+    }
+    formulario.dataset.enviando = '1';
+    const restaurarBoton = iniciarAccion(evento.submitter, texto);
+    return () => {
+        delete formulario.dataset.enviando;
+        restaurarBoton();
+    };
+}
+
 function activarTab(tabId) {
     document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('activo', tab.dataset.tab === tabId));
     document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('activo', panel.id === `tab-${tabId}`));
@@ -384,7 +399,8 @@ function actualizarResumenTipo() {
 
 async function crearTipoDesdeWizard(evento) {
     evento.preventDefault();
-    const restaurar = iniciarAccion(evento.submitter, 'Creando...');
+    const restaurar = iniciarFormulario(evento, 'Creando...');
+    if (!restaurar) return;
     try {
         const form = new FormData(evento.currentTarget);
         await apiJson('/admin/tipos-documento', {method:'POST', admin:true, body:JSON.stringify(datosTipo(form))});
@@ -406,7 +422,8 @@ function datosTipo(form) {
 async function enviarPlantilla(evento) {
     evento.preventDefault();
     if (!exigirTipoSeleccionado()) return;
-    const restaurar = iniciarAccion(evento.submitter, 'Leyendo OCR...');
+    const restaurar = iniciarFormulario(evento, 'Leyendo OCR...');
+    if (!restaurar) return;
     try {
         const data = await apiForm(`/admin/tipos-documento/${tipoSeleccionado}/plantillas`, new FormData(evento.currentTarget));
         renderPlantillaCreada(data.plantilla);
@@ -431,7 +448,8 @@ function htmlCampoPlantilla(campo) {
 
 async function crearApiKey(evento) {
     evento.preventDefault();
-    const restaurar = iniciarAccion(evento.submitter, 'Generando...');
+    const restaurar = iniciarFormulario(evento, 'Generando...');
+    if (!restaurar) return;
     try {
         const form = new FormData(evento.currentTarget);
         const data = await apiJson('/admin/api-keys', {method:'POST', admin:true, body:JSON.stringify({nombre:form.get('nombre'), permisos:['extract']})});
@@ -450,7 +468,8 @@ async function crearApiKey(evento) {
 async function crearCampo(evento) {
     evento.preventDefault();
     if (!exigirTipoSeleccionado()) return;
-    const restaurar = iniciarAccion(evento.submitter, 'Agregando...');
+    const restaurar = iniciarFormulario(evento, 'Agregando...');
+    if (!restaurar) return;
     try {
         const form = new FormData(evento.currentTarget);
         await apiJson(`/admin/tipos-documento/${tipoSeleccionado}/campos`, {method:'POST', admin:true, body:JSON.stringify(datosCampo(form))});
@@ -471,7 +490,8 @@ function datosCampo(form) {
 async function registrarModelo(evento) {
     evento.preventDefault();
     if (!exigirTipoSeleccionado()) return;
-    const restaurar = iniciarAccion(evento.submitter, 'Registrando...');
+    const restaurar = iniciarFormulario(evento, 'Registrando...');
+    if (!restaurar) return;
     try {
         const form = new FormData(evento.currentTarget);
         await apiJson(`/admin/tipos-documento/${tipoSeleccionado}/modelos`, {method:'POST', admin:true, body:JSON.stringify(datosModelo(form))});
@@ -492,7 +512,8 @@ function datosModelo(form) {
 async function subirDocumentoEntrenamiento(evento) {
     evento.preventDefault();
     if (!exigirTipoSeleccionado()) return;
-    const restaurar = iniciarAccion(evento.submitter, 'Procesando OCR...');
+    const restaurar = iniciarFormulario(evento, 'Procesando OCR...');
+    if (!restaurar) return;
     try {
         const data = await apiForm(`/admin/tipos-documento/${tipoSeleccionado}/documentos-entrenamiento`, new FormData(evento.currentTarget));
         document.getElementById('texto-ocr-entrenamiento').value = data.documento_entrenamiento.texto_ocr || '';
@@ -536,3 +557,5 @@ async function guardarAnotacion() {
 function datosAnotacion(select, opcion) {
     return {clave_campo:select.value, etiqueta_entidad:opcion.dataset.etiqueta, texto_anotado:document.getElementById('texto-anotado').value, posicion_inicio:rangoSeleccionado.inicio, posicion_fin:rangoSeleccionado.fin};
 }
+
+

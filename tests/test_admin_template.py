@@ -27,6 +27,8 @@ class TestAdminTemplate(unittest.TestCase):
         self.assertIn('crearToast', contenido)
         self.assertIn('mostrarToast', contenido)
         self.assertIn('iniciarAccion', contenido)
+        self.assertIn('iniciarFormulario', contenido)
+        self.assertIn('La accion ya se esta procesando.', contenido)
         self.assertIn('button:disabled', contenido)
         self.assertIn('Tipo documental creado.', contenido)
         self.assertIn('Campo agregado al documento.', contenido)
@@ -83,3 +85,4 @@ def leer_archivo(ruta):
 
 if __name__ == '__main__':
     unittest.main()
+
