@@ -22,6 +22,45 @@ class TestEntrenadorLotesAprendizaje(unittest.TestCase):
         self.assertEqual(metricas["dependencia"]["f1"], 1.0)
         self.assertEqual(metricas["programa"]["f1"], 1.0)
 
+    def test_crea_entidad_alineada_con_simbolos_de_ocr(self):
+        nlp = spacy.blank("es")
+        documento = {
+            "texto_ocr": "Total pagado: $ 8,25.",
+            "campos_validados": {"total": "$ 8,25"},
+        }
+        ejemplo = entrenador.crear_ejemplo_documento(nlp, tipo_factura(), documento)
+
+        self.assertEqual(ejemplo.reference.ents[0].label_, "TOTAL")
+        self.assertIn("$", ejemplo.reference.ents[0].text)
+
+    def test_predice_campo_por_contexto_si_modelo_no_detecta(self):
+        predicciones = entrenador.predecir_campos(
+            spacy.blank("es"),
+            '{"invoice_no": "40378170", "invoice_date": "10/15/2012"}',
+            {"invoice_no": "INVOICE_NO", "invoice_date": "INVOICE_DATE"},
+        )
+
+        self.assertEqual(predicciones["invoice_no"], "40378170")
+        self.assertEqual(predicciones["invoice_date"], "10/15/2012")
+
+    def test_predice_factura_con_alias_y_tabla(self):
+        predicciones = entrenador.predecir_campos(spacy.blank("es"), texto_factura(), mapa_factura())
+
+        self.assertEqual(predicciones["date_issue"], "10/15/2012")
+        self.assertIn("Patel", predicciones["seller"])
+        self.assertIn("Jackson", predicciones["client"])
+        self.assertEqual(predicciones["total"], "$ 8,25")
+
+    def test_predice_texto_serializado_sin_comerse_siguiente_campo(self):
+        texto = "term: 18_months party: Open_Text_Corporation jurisdiction: California effective_date: 2014-07-24"
+        mapa = {"term": "TERM", "party": "PARTY", "jurisdiction": "JURISDICTION", "effective_date": "EFFECTIVE_DATE"}
+        predicciones = entrenador.predecir_campos(spacy.blank("es"), texto, mapa)
+
+        self.assertEqual(predicciones["term"], "18_months")
+        self.assertEqual(predicciones["party"], "Open_Text_Corporation")
+        self.assertEqual(predicciones["jurisdiction"], "California")
+        self.assertEqual(predicciones["effective_date"], "2014-07-24")
+
 
 def modelo_con_entidades():
     nlp = spacy.blank("es")
@@ -46,6 +85,33 @@ def tipo_solicitud():
             {"clave": "programa", "etiqueta_entidad": "PROGRAMA", "obligatorio": True},
         ],
     }
+
+
+def tipo_factura():
+    return {
+        "id_tipo_documento": "factura",
+        "modelo_activo": "modelo_inexistente",
+        "campos": [
+            {"clave": "total", "etiqueta_entidad": "TOTAL", "obligatorio": True},
+        ],
+    }
+
+
+def mapa_factura():
+    return {
+        "date_issue": "DATE_ISSUE",
+        "seller": "SELLER",
+        "client": "CLIENT",
+        "total": "TOTAL",
+    }
+
+
+def texto_factura():
+    return """Date of issue: 10/15/2012
+| **Seller:** | **Client:** |
+| :--- | :--- |
+| Patel SA<br>Tax Id: 123 | Jackson LLC<br>Tax Id: 456 |
+| **Total** | **$ 7,50** | **$ 0,75** | **$ 8,25** |"""
 
 
 def documento_solicitud():

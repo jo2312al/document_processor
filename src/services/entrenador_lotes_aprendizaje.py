@@ -1,5 +1,6 @@
 import os
 import random
+import re
 from difflib import SequenceMatcher
 
 import spacy
@@ -54,7 +55,36 @@ def crear_ejemplo_documento(nlp, tipo_documento, documento):
     entidades = buscar_entidades_validadas(texto, campos, mapa_etiquetas_campos(tipo_documento))
     if not entidades:
         return None
-    return Example.from_dict(nlp.make_doc(texto), {"entities": entidades})
+    return crear_ejemplo_alineado(nlp, texto, entidades)
+
+
+def crear_ejemplo_alineado(nlp, texto, entidades):
+    prediccion = nlp.make_doc(texto)
+    referencia = nlp.make_doc(texto)
+    referencia.ents = crear_spans_alineados(referencia, entidades)
+    if not referencia.ents:
+        return None
+    return Example(prediccion, referencia)
+
+
+def crear_spans_alineados(doc, entidades):
+    spans = []
+    for inicio, fin, etiqueta in entidades:
+        span = doc.char_span(inicio, fin, label=etiqueta, alignment_mode="expand")
+        if span:
+            spans.append(span)
+    return filtrar_spans_traslapados(spans)
+
+
+def filtrar_spans_traslapados(spans):
+    spans_ordenados = sorted(spans, key=lambda span: (span.start, -(span.end - span.start)))
+    seleccionados = []
+    ultimo_fin = -1
+    for span in spans_ordenados:
+        if span.start >= ultimo_fin:
+            seleccionados.append(span)
+            ultimo_fin = span.end
+    return seleccionados
 
 
 def buscar_entidades_validadas(texto, campos, mapa_etiquetas):
@@ -138,9 +168,110 @@ def evaluar_documento(modelo, tipo_documento, documento, resultados):
 
 def predecir_campos(modelo, texto, mapa_etiquetas):
     if modelo is None:
-        return {}
+        return {campo: extraer_por_contexto(texto, campo) for campo in mapa_etiquetas}
     entidades = {ent.label_: ent.text for ent in modelo(texto).ents}
-    return {campo: entidades.get(etiqueta, "") for campo, etiqueta in mapa_etiquetas.items()}
+    return {campo: elegir_prediccion(texto, campo, entidades.get(etiqueta, "")) for campo, etiqueta in mapa_etiquetas.items()}
+
+
+def elegir_prediccion(texto, campo, valor_modelo):
+    valor_contexto = extraer_por_contexto(texto, campo)
+    if valor_contexto:
+        return valor_contexto
+    return valor_modelo
+
+
+def extraer_por_contexto(texto, campo):
+    valor_especial = extraer_campo_especial(texto, campo)
+    if valor_especial:
+        return valor_especial
+    for etiqueta in etiquetas_contexto(campo):
+        valor = extraer_valor_etiquetado(texto, etiqueta)
+        if valor:
+            return valor
+    return ""
+
+
+def extraer_campo_especial(texto, campo):
+    extractores = {
+        "total": extraer_total_documento,
+        "seller": lambda valor: extraer_tabla_partes(valor, 1),
+        "client": lambda valor: extraer_tabla_partes(valor, 2),
+    }
+    extractor = extractores.get(str(campo or "").lower())
+    return extractor(texto) if extractor else ""
+
+
+def etiquetas_contexto(campo):
+    base = str(campo or "").strip()
+    variantes = {base, base.replace("_", " "), base.replace("_", "-")}
+    variantes.add(re.sub(r"(?<!^)([A-Z])", r" \1", base).lower())
+    variantes.update(alias_campos_contexto().get(base.lower(), []))
+    return [variante for variante in variantes if variante]
+
+
+def alias_campos_contexto():
+    return {
+        "date_issue": ["date of issue", "issue date"],
+        "invoice_date": ["invoice date", "date of issue"],
+        "invoice_no": ["invoice no", "invoice number"],
+        "charity_number": ["charity number"],
+        "charity_name": ["charity name"],
+        "report_date": ["report date"],
+    }
+
+
+def extraer_valor_etiquetado(texto, etiqueta):
+    patron = rf"(?i)(?:^|[\n\r,{{|#\s])(?:\"?\*?\*?{re.escape(etiqueta)}\"?\*?\*?)\s*(?:[:=]|\|)\s*\"?([^\"\n\r,|}}]+)"
+    coincidencia = re.search(patron, texto)
+    if not coincidencia:
+        return ""
+    return limpiar_valor_contexto(coincidencia.group(1))
+
+
+def limpiar_valor_contexto(valor):
+    valor_limpio = str(valor or "").replace("**", "").replace("<br>", " ")
+    valor_limpio = re.split(r"\s+[A-Za-z][A-Za-z0-9_]{2,}\s*:", valor_limpio, maxsplit=1)[0]
+    return valor_limpio.strip(" -:\t")
+
+
+def extraer_total_documento(texto):
+    total_json = extraer_valor_etiquetado(texto, "total_gross_worth")
+    if total_json:
+        return total_json
+    total_tabla = extraer_total_tabla(texto)
+    return total_tabla or extraer_valor_etiquetado(texto, "total")
+
+
+def extraer_total_tabla(texto):
+    filas_total = [linea for linea in texto.splitlines() if "total" in linea.lower()]
+    if not filas_total:
+        return ""
+    celdas = [limpiar_valor_contexto(celda) for celda in filas_total[-1].split("|")]
+    celdas = [celda for celda in celdas if celda and celda.lower() != "total"]
+    return celdas[-1] if celdas else ""
+
+
+def extraer_tabla_partes(texto, posicion):
+    filas = [linea for linea in texto.splitlines() if linea.strip().startswith("|")]
+    indice = indice_fila_partes(filas)
+    if indice < 0:
+        return ""
+    celdas = [celda.strip() for celda in filas[indice].split("|") if celda.strip()]
+    return celdas[posicion - 1] if len(celdas) >= posicion else ""
+
+
+def indice_fila_partes(filas):
+    for indice, fila in enumerate(filas):
+        if "seller" in fila.lower() and "client" in fila.lower():
+            return siguiente_fila_datos(filas, indice + 1)
+    return -1
+
+
+def siguiente_fila_datos(filas, inicio):
+    for indice in range(inicio, len(filas)):
+        if "---" not in filas[indice]:
+            return indice
+    return -1
 
 
 def campo_correcto(campo, esperado, obtenido):
