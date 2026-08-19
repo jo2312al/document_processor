@@ -20,6 +20,9 @@ class TestAdminTemplate(unittest.TestCase):
         self.assertIn('/logout', contenido)
         self.assertNotIn('token-admin', contenido)
         self.assertNotIn('guardar-token', contenido)
+        self.assertIn('Ruta de configuracion', contenido)
+        self.assertIn('guia-progreso', contenido)
+        self.assertIn('data-ir-tab="plantilla"', contenido)
 
     def test_admin_muestra_retroalimentacion_en_acciones(self):
         contenido = leer_archivos_admin()
@@ -38,6 +41,9 @@ class TestAdminTemplate(unittest.TestCase):
         self.assertIn('Lote enviado a entrenamiento.', contenido)
         self.assertIn('API key generada.', contenido)
         self.assertIn('Vista ${nombreTab(tabId)} abierta.', contenido)
+        self.assertIn('autocompletarCampo', contenido)
+        self.assertIn('Escribe el nombre del tipo documental para continuar.', contenido)
+        self.assertIn('renderGuiaProgreso', contenido)
 
     def test_admin_conecta_botones_principales(self):
         contenido = leer_archivos_admin()

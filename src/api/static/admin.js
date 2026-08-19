@@ -16,6 +16,7 @@ function iniciarPanel() {
 
 function conectarEventos() {
     document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => activarTab(tab.dataset.tab));
+    document.querySelectorAll('[data-ir-tab]').forEach(boton => boton.onclick = () => activarTab(boton.dataset.irTab));
     document.getElementById('refrescar-lotes').onclick = evento => cargarLotes(true, evento.currentTarget);
     document.getElementById('abrir-wizard-tipo').onclick = abrirWizardTipo;
     document.getElementById('cerrar-wizard-tipo').onclick = cerrarWizardTipo;
@@ -29,6 +30,10 @@ function conectarEventos() {
     document.getElementById('form-entrenamiento').onsubmit = subirDocumentoEntrenamiento;
     document.getElementById('texto-ocr-entrenamiento').onmouseup = capturarSeleccionOcr;
     document.getElementById('guardar-anotacion').onclick = guardarAnotacion;
+    document.querySelector('#form-campo [name="nombre"]').oninput = autocompletarCampo;
+    document.querySelector('#form-campo [name="clave"]').oninput = marcarCampoManual;
+    document.querySelector('#form-campo [name="etiqueta_entidad"]').oninput = marcarCampoManual;
+    document.getElementById('form-tipo').oninput = actualizarResumenTipo;
 }
 
 
@@ -187,6 +192,36 @@ function renderDetalle() {
     renderCampos(tipo.campos || []);
     renderModelos(tipo.versiones_modelo || []);
     renderPlantilla(tipo);
+    renderGuiaProgreso(tipo);
+}
+
+function renderGuiaProgreso(tipo) {
+    const guia = document.getElementById('guia-progreso');
+    guia.innerHTML = pasosConfiguracion(tipo).map(paso => htmlPasoGuia(paso)).join('');
+    guia.querySelectorAll('[data-ir-tab]').forEach(boton => boton.onclick = () => activarTab(boton.dataset.irTab));
+}
+
+function pasosConfiguracion(tipo) {
+    const totalDocumentos = Number(document.getElementById('resumen-documentos').textContent || 0);
+    const totalLotes = Number(document.getElementById('resumen-lotes').textContent || 0);
+    return [
+        pasoGuia('Documento', 'Tipo seleccionado', 'documento', true),
+        pasoGuia('Campos', `${(tipo.campos || []).length} registrados`, 'campos', (tipo.campos || []).length > 0),
+        pasoGuia('Plantilla', tipo.tiene_plantilla_activa ? 'Activa' : 'Pendiente', 'plantilla', tipo.tiene_plantilla_activa),
+        pasoGuia('Anotacion', totalDocumentos ? `${totalDocumentos} PDF OCR` : 'Sin PDF OCR', 'entrenamiento', totalDocumentos > 0),
+        pasoGuia('Aprendizaje', totalLotes ? `${totalLotes} lote(s)` : 'Sin lotes', 'aprendizaje', totalLotes > 0),
+        pasoGuia('API', 'Integracion externa', 'api', true),
+    ];
+}
+
+function pasoGuia(nombre, detalle, tab, listo) {
+    return {nombre, detalle, tab, listo};
+}
+
+function htmlPasoGuia(paso) {
+    const clase = paso.listo ? 'ok' : 'pendiente';
+    const accion = paso.listo ? 'Abrir' : 'Completar';
+    return `<button type="button" class="guia-paso ${clase}" data-ir-tab="${paso.tab}"><span>${paso.nombre}</span><strong>${paso.detalle}</strong><em>${accion}</em></button>`;
 }
 
 function renderPlantilla(tipo) {
@@ -210,6 +245,12 @@ function renderCampos(campos) {
     select.innerHTML = '';
     campos.forEach(campo => agregarCampoVista(lista, select, campo));
     if (!campos.length) lista.innerHTML = '<div class="vacio">Agrega campos para entrenar.</div>';
+    actualizarAyudaCampos(campos);
+}
+
+function actualizarAyudaCampos(campos) {
+    const formulario = document.getElementById('form-campo');
+    formulario.classList.toggle('atencion', !campos.length);
 }
 
 function agregarCampoVista(lista, select, campo) {
@@ -256,6 +297,8 @@ function renderDocumentos(documentos) {
     lista.innerHTML = '';
     documentos.forEach(doc => lista.appendChild(crearDocumentoVista(doc)));
     if (!documentos.length) lista.innerHTML = '<div class="vacio">Sube un PDF para generar OCR.</div>';
+    const tipo = tiposDocumento.find(item => item.id_tipo_documento === tipoSeleccionado);
+    if (tipo) renderGuiaProgreso(tipo);
 }
 
 function crearDocumentoVista(doc) {
@@ -295,6 +338,8 @@ function renderLotes(lotes) {
     lotes.forEach(lote => lista.appendChild(crearLote(lote)));
     if (!lotes.length) lista.innerHTML = '<div class="vacio">Aun no hay documentos validados recibidos.</div>';
     document.getElementById('resumen-decision').textContent = lotes[0]?.estado || '-';
+    const tipo = tiposDocumento.find(item => item.id_tipo_documento === tipoSeleccionado);
+    if (tipo) renderGuiaProgreso(tipo);
 }
 
 function crearLote(lote) {
@@ -381,9 +426,20 @@ function cerrarWizardTipo() {
 }
 
 function moverWizardTipo(direccion) {
+    if (direccion > 0 && !pasoTipoValido()) return;
     pasoTipo = Math.max(0, Math.min(3, pasoTipo + direccion));
     mostrarPasoTipo();
     mostrarEstado(`Paso ${pasoTipo + 1} de 4.`, 'ok');
+}
+
+function pasoTipoValido() {
+    const form = document.getElementById('form-tipo');
+    if (pasoTipo === 0 && !String(new FormData(form).get('nombre') || '').trim()) {
+        mostrarEstado('Escribe el nombre del tipo documental para continuar.', 'error');
+        form.querySelector('[name="nombre"]').focus();
+        return false;
+    }
+    return true;
 }
 
 function mostrarPasoTipo() {
@@ -399,11 +455,13 @@ function actualizarResumenTipo() {
 
 async function crearTipoDesdeWizard(evento) {
     evento.preventDefault();
+    if (!pasoTipoValido()) return;
     const restaurar = iniciarFormulario(evento, 'Creando...');
     if (!restaurar) return;
     try {
         const form = new FormData(evento.currentTarget);
-        await apiJson('/admin/tipos-documento', {method:'POST', admin:true, body:JSON.stringify(datosTipo(form))});
+        const data = await apiJson('/admin/tipos-documento', {method:'POST', admin:true, body:JSON.stringify(datosTipo(form))});
+        tipoSeleccionado = data.tipo_documento?.id_tipo_documento || tipoSeleccionado;
         evento.currentTarget.reset();
         cerrarWizardTipo();
         await cargarTipos();
@@ -474,6 +532,7 @@ async function crearCampo(evento) {
         const form = new FormData(evento.currentTarget);
         await apiJson(`/admin/tipos-documento/${tipoSeleccionado}/campos`, {method:'POST', admin:true, body:JSON.stringify(datosCampo(form))});
         evento.currentTarget.reset();
+        limpiarCamposAutomaticos(evento.currentTarget);
         await cargarTipos();
         mostrarEstado('Campo agregado al documento.', 'ok');
     } catch (error) {
@@ -485,6 +544,45 @@ async function crearCampo(evento) {
 
 function datosCampo(form) {
     return {nombre:form.get('nombre'), clave:form.get('clave'), etiqueta_entidad:form.get('etiqueta_entidad'), tipo_dato:form.get('tipo_dato'), obligatorio:form.get('obligatorio') === 'on', descripcion:form.get('descripcion')};
+}
+
+function autocompletarCampo(evento) {
+    const form = document.getElementById('form-campo');
+    const nombre = evento.currentTarget.value;
+    const clave = form.querySelector('[name="clave"]');
+    const etiqueta = form.querySelector('[name="etiqueta_entidad"]');
+    if (campoAutomatico(clave)) actualizarCampoAutomatico(clave, generarClaveCampo(nombre));
+    if (campoAutomatico(etiqueta)) actualizarCampoAutomatico(etiqueta, generarEtiquetaCampo(nombre));
+}
+
+function campoAutomatico(input) {
+    return !input.value.trim() || input.dataset.auto === '1';
+}
+
+function actualizarCampoAutomatico(input, valor) {
+    input.value = valor;
+    input.dataset.auto = '1';
+}
+
+function marcarCampoManual(evento) {
+    evento.currentTarget.dataset.auto = '0';
+}
+
+function limpiarCamposAutomaticos(form) {
+    form.querySelectorAll('[data-auto]').forEach(input => delete input.dataset.auto);
+}
+
+function generarClaveCampo(texto) {
+    return limpiarIdentificador(texto).toLowerCase();
+}
+
+function generarEtiquetaCampo(texto) {
+    return limpiarIdentificador(texto).toUpperCase();
+}
+
+function limpiarIdentificador(texto) {
+    const base = String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return base.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'campo';
 }
 
 async function registrarModelo(evento) {

@@ -51,6 +51,17 @@
                 <p id="estado-global" class="estado"></p>
             </section>
 
+            <section class="panel flujo-panel">
+                <div class="panel-titulo">
+                    <div>
+                        <h2>Ruta de configuracion</h2>
+                        <p class="muted">Avanza de izquierda a derecha hasta dejar el documento listo para recibir correcciones y aprender por lotes.</p>
+                    </div>
+                    <button class="fantasma" type="button" data-ir-tab="documento">Revisar inicio</button>
+                </div>
+                <div id="guia-progreso" class="guia-progreso"></div>
+            </section>
+
             <section id="tab-documento" class="tab-panel activo">
                 <section class="panel stack">
                     <div class="panel-titulo">
@@ -66,7 +77,7 @@
 
             <section id="tab-campos" class="tab-panel">
                 <section class="panel stack">
-                    <h2>Campos obligatorios y opcionales</h2>
+                    <div class="panel-titulo"><div><h2>Campos obligatorios y opcionales</h2><p class="muted">Define exactamente que datos debe extraer el sistema. Ejemplo: matricula, nombre completo, periodo o total.</p></div><button class="fantasma" type="button" data-ir-tab="plantilla">Siguiente: plantilla</button></div>
                     <div id="lista-campos" class="lista"></div>
                     <form id="form-campo" class="stack">
                         <div class="grid2"><label>Nombre<input name="nombre" required placeholder="Matricula"></label><label>Clave<input name="clave" placeholder="alu_matricula"></label></div>
@@ -80,7 +91,7 @@
 
             <section id="tab-plantilla" class="tab-panel">
                 <section class="panel stack">
-                    <div class="panel-titulo"><div><h2>Plantilla aprendida</h2><p class="muted">Sube el primer PDF validado y escribe sus valores reales. El sistema ubicara texto, posiciones y contexto.</p></div><span id="estado-plantilla" class="badge">sin plantilla</span></div>
+                    <div class="panel-titulo"><div><h2>Plantilla aprendida</h2><p class="muted">Sube el primer PDF validado y escribe sus valores reales. El sistema ubicara texto, posiciones y contexto.</p></div><div class="acciones"><span id="estado-plantilla" class="badge">sin plantilla</span><button class="fantasma" type="button" data-ir-tab="entrenamiento">Siguiente: anotar</button></div></div>
                     <form id="form-plantilla" class="stack">
                         <div class="grid2"><label>Nombre de plantilla<input name="nombre_plantilla" placeholder="Formato base"></label><label>PDF de referencia<input name="file" type="file" accept=".pdf" required></label></div>
                         <label>Valores del primer documento<textarea name="campos_muestra" required placeholder='{"alu_matricula":"2411367","NOMBRE_COMPLETO":"Juan Perez Lopez","alu_carrera":"Ingenieria","alu_servicio":"ENERO A JULIO"}'></textarea></label>
@@ -91,7 +102,7 @@
             </section>
 
             <section id="tab-entrenamiento" class="tab-panel">
-                <section class="panel stack"><h2>Anotacion asistida</h2><div class="split"><div class="stack"><form id="form-entrenamiento" class="stack"><label>PDF<input name="file" type="file" accept=".pdf" required></label><label>Preprocesamiento<select name="metodo_preprocesamiento"><option value="tesseract">Tesseract</option><option value="docling">Docling</option></select></label><button type="submit">Subir y generar OCR</button></form><div id="lista-documentos-entrenamiento" class="lista"></div></div><div class="stack"><textarea id="texto-ocr-entrenamiento" class="ocr" readonly placeholder="Selecciona un documento para revisar OCR."></textarea><div class="grid2"><label>Campo<select id="campo-anotacion"></select></label><label>Texto seleccionado<input id="texto-anotado" readonly></label></div><button id="guardar-anotacion" type="button">Guardar anotacion</button></div></div></section>
+                <section class="panel stack"><div class="panel-titulo"><div><h2>Anotacion asistida</h2><p class="muted">Sube un PDF, revisa el OCR, selecciona el texto exacto y guardalo como evidencia de entrenamiento.</p></div><button class="fantasma" type="button" data-ir-tab="aprendizaje">Siguiente: aprendizaje</button></div><div class="split"><div class="stack"><form id="form-entrenamiento" class="stack"><label>PDF<input name="file" type="file" accept=".pdf" required></label><label>Preprocesamiento<select name="metodo_preprocesamiento"><option value="tesseract">Tesseract</option><option value="docling">Docling</option></select></label><button type="submit">Subir y generar OCR</button></form><div id="lista-documentos-entrenamiento" class="lista"></div></div><div class="stack"><textarea id="texto-ocr-entrenamiento" class="ocr" readonly placeholder="Selecciona un documento para revisar OCR."></textarea><div class="grid2"><label>Campo<select id="campo-anotacion"></select></label><label>Texto seleccionado<input id="texto-anotado" readonly></label></div><button id="guardar-anotacion" type="button">Guardar anotacion</button><p class="muted">Tip: selecciona en el OCR exactamente el valor del campo antes de guardar.</p></div></div></section>
             </section>
 
             <section id="tab-aprendizaje" class="tab-panel">
@@ -99,7 +110,7 @@
             </section>
 
             <section id="tab-modelo" class="tab-panel">
-                <section class="panel stack"><h2>Versiones de modelo</h2><div id="lista-modelos" class="lista"></div><form id="form-modelo" class="stack"><div class="grid2"><label>Nombre modelo<input name="nombre_modelo" required></label><label>Ruta modelo<input name="ruta_modelo"></label></div><div class="grid2"><label>Documentos usados<input name="documentos_entrenamiento" type="number" min="0" value="0"></label><label>F1 entidades<input name="f1_entidades" type="number" min="0" max="1" step="0.0001"></label></div><label><span><input name="activar" type="checkbox"> Activar como modelo en produccion</span></label><label>Observaciones<textarea name="observaciones"></textarea></label><button type="submit">Registrar modelo</button></form></section>
+                <section class="panel stack"><div class="panel-titulo"><div><h2>Versiones de modelo</h2><p class="muted">Consulta que modelo esta activo y registra candidatos solo cuando tengas una evaluacion confiable.</p></div><button class="fantasma" type="button" data-ir-tab="api">Siguiente: API</button></div><div id="lista-modelos" class="lista"></div><form id="form-modelo" class="stack"><div class="grid2"><label>Nombre modelo<input name="nombre_modelo" required></label><label>Ruta modelo<input name="ruta_modelo"></label></div><div class="grid2"><label>Documentos usados<input name="documentos_entrenamiento" type="number" min="0" value="0"></label><label>F1 entidades<input name="f1_entidades" type="number" min="0" max="1" step="0.0001"></label></div><label><span><input name="activar" type="checkbox"> Activar como modelo en produccion</span></label><label>Observaciones<textarea name="observaciones"></textarea></label><button type="submit">Registrar modelo</button></form></section>
             </section>
 
             <section id="tab-api" class="tab-panel">
