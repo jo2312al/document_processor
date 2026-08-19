@@ -1,4 +1,4 @@
-﻿import os
+import os
 import random
 from difflib import SequenceMatcher
 
@@ -6,15 +6,8 @@ import spacy
 from spacy.training import Example
 
 from config import EPOCAS_ENTRENAMIENTO_LOTE, MODELS_DIR
-from src.services.gestor_lotes_aprendizaje import CAMPOS_OBLIGATORIOS
+from src.services.configuracion_campos_documento import campos_evaluables_tipo, mapa_etiquetas_campos
 from src.services.gestor_tipos_documento import obtener_ruta_modelo_activo, obtener_tipo_documento
-
-ETIQUETAS_CAMPO = {
-    "alu_matricula": "MATRICULA",
-    "NOMBRE_COMPLETO": "NOMBRE_COMPLETO",
-    "alu_carrera": "CARRERA",
-    "alu_servicio": "SERVICIO",
-}
 
 
 def entrenar_y_evaluar_lote(id_lote, documentos):
@@ -22,7 +15,7 @@ def entrenar_y_evaluar_lote(id_lote, documentos):
     entrenamiento, validacion = dividir_documentos(documentos)
     ruta_modelo = entrenar_modelo_candidato(tipo_documento, id_lote, entrenamiento)
     metricas = evaluar_modelos(tipo_documento, ruta_modelo, validacion)
-    decision = decidir_activacion(metricas)
+    decision = decidir_activacion(tipo_documento, metricas)
     return {"ruta_modelo": ruta_modelo, "metricas": metricas, "decision": decision}
 
 
@@ -35,7 +28,7 @@ def dividir_documentos(documentos):
 
 def entrenar_modelo_candidato(tipo_documento, id_lote, documentos):
     nlp = crear_modelo_base()
-    ejemplos = crear_ejemplos_entrenamiento(nlp, documentos)
+    ejemplos = crear_ejemplos_entrenamiento(nlp, tipo_documento, documentos)
     entrenar_ejemplos(nlp, ejemplos)
     return guardar_modelo_candidato(nlp, tipo_documento, id_lote)
 
@@ -46,26 +39,27 @@ def crear_modelo_base():
     return nlp
 
 
-def crear_ejemplos_entrenamiento(nlp, documentos):
+def crear_ejemplos_entrenamiento(nlp, tipo_documento, documentos):
     ejemplos = []
     for documento in documentos:
-        ejemplo = crear_ejemplo_documento(nlp, documento)
+        ejemplo = crear_ejemplo_documento(nlp, tipo_documento, documento)
         if ejemplo:
             ejemplos.append(ejemplo)
     return ejemplos
 
 
-def crear_ejemplo_documento(nlp, documento):
+def crear_ejemplo_documento(nlp, tipo_documento, documento):
     texto = documento.get("texto_ocr", "")
-    entidades = buscar_entidades_validadas(texto, documento.get("campos_validados", {}))
+    campos = documento.get("campos_validados", {})
+    entidades = buscar_entidades_validadas(texto, campos, mapa_etiquetas_campos(tipo_documento))
     if not entidades:
         return None
     return Example.from_dict(nlp.make_doc(texto), {"entities": entidades})
 
 
-def buscar_entidades_validadas(texto, campos):
+def buscar_entidades_validadas(texto, campos, mapa_etiquetas):
     entidades = []
-    for clave, etiqueta in ETIQUETAS_CAMPO.items():
+    for clave, etiqueta in mapa_etiquetas.items():
         entidad = buscar_entidad(texto, campos.get(clave), etiqueta)
         if entidad:
             entidades.append(entidad)
@@ -112,7 +106,10 @@ def guardar_modelo_candidato(nlp, tipo_documento, id_lote):
 def evaluar_modelos(tipo_documento, ruta_candidato, documentos):
     modelo_activo = cargar_modelo_seguro(obtener_ruta_modelo_activo(tipo_documento))
     modelo_candidato = cargar_modelo_seguro(ruta_candidato)
-    return {"activo": evaluar_modelo(modelo_activo, documentos), "candidato": evaluar_modelo(modelo_candidato, documentos)}
+    return {
+        "activo": evaluar_modelo(modelo_activo, tipo_documento, documentos),
+        "candidato": evaluar_modelo(modelo_candidato, tipo_documento, documentos),
+    }
 
 
 def cargar_modelo_seguro(ruta_modelo):
@@ -121,31 +118,33 @@ def cargar_modelo_seguro(ruta_modelo):
     return spacy.load(ruta_modelo)
 
 
-def evaluar_modelo(modelo, documentos):
-    resultados = {campo: {"correctos": 0, "total": 0, "f1": 0.0} for campo in CAMPOS_OBLIGATORIOS}
+def evaluar_modelo(modelo, tipo_documento, documentos):
+    campos = campos_evaluables_tipo(tipo_documento)
+    resultados = {campo: {"correctos": 0, "total": 0, "f1": 0.0} for campo in campos}
     for documento in documentos:
-        evaluar_documento(modelo, documento, resultados)
+        evaluar_documento(modelo, tipo_documento, documento, resultados)
     return calcular_f1_campos(resultados)
 
 
-def evaluar_documento(modelo, documento, resultados):
-    predicciones = predecir_campos(modelo, documento.get("texto_ocr", ""))
-    for campo in CAMPOS_OBLIGATORIOS:
+def evaluar_documento(modelo, tipo_documento, documento, resultados):
+    texto = documento.get("texto_ocr", "")
+    predicciones = predecir_campos(modelo, texto, mapa_etiquetas_campos(tipo_documento))
+    for campo in resultados:
         esperado = documento.get("campos_validados", {}).get(campo, "")
         resultados[campo]["total"] += 1
         if campo_correcto(campo, esperado, predicciones.get(campo, "")):
             resultados[campo]["correctos"] += 1
 
 
-def predecir_campos(modelo, texto):
+def predecir_campos(modelo, texto, mapa_etiquetas):
     if modelo is None:
         return {}
     entidades = {ent.label_: ent.text for ent in modelo(texto).ents}
-    return {campo: entidades.get(etiqueta, "") for campo, etiqueta in ETIQUETAS_CAMPO.items()}
+    return {campo: entidades.get(etiqueta, "") for campo, etiqueta in mapa_etiquetas.items()}
 
 
 def campo_correcto(campo, esperado, obtenido):
-    if campo == "alu_matricula":
+    if campo in ["alu_matricula", "matricula", "numero_control"]:
         return normalizar_texto(esperado) == normalizar_texto(obtenido)
     return similitud_texto(esperado, obtenido) >= 0.9
 
@@ -156,16 +155,17 @@ def calcular_f1_campos(resultados):
     return resultados
 
 
-def decidir_activacion(metricas):
-    comparacion = comparar_campos(metricas["activo"], metricas["candidato"])
+def decidir_activacion(tipo_documento, metricas):
+    campos = campos_evaluables_tipo(tipo_documento)
+    comparacion = comparar_campos(metricas["activo"], metricas["candidato"], campos)
     empeorados = [campo for campo, datos in comparacion.items() if datos["resultado"] == "empeoro"]
     mejorados = [campo for campo, datos in comparacion.items() if datos["resultado"] == "mejoro"]
     activar = not empeorados and bool(mejorados)
     return {"activar": activar, "comparacion": comparacion, "recomendaciones": crear_recomendaciones(empeorados, mejorados)}
 
 
-def comparar_campos(activo, candidato):
-    return {campo: comparar_campo(activo.get(campo, {}), candidato.get(campo, {})) for campo in CAMPOS_OBLIGATORIOS}
+def comparar_campos(activo, candidato, campos):
+    return {campo: comparar_campo(activo.get(campo, {}), candidato.get(campo, {})) for campo in campos}
 
 
 def comparar_campo(activo, candidato):

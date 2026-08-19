@@ -1,12 +1,14 @@
-﻿import json
+import json
 import os
 import shutil
 import uuid
 from datetime import datetime, timezone
 
 from config import APRENDIZAJE_LOTES_PATH, DOCUMENTOS_VALIDADOS_DIR, UMBRAL_LOTE_ENTRENAMIENTO
+from src.services.configuracion_campos_documento import CAMPOS_BASE, campos_obligatorios_tipo
+from src.services.gestor_tipos_documento import TipoDocumentoNoEncontrado, obtener_tipo_documento
 
-CAMPOS_OBLIGATORIOS = ["alu_matricula", "NOMBRE_COMPLETO", "alu_carrera", "alu_servicio"]
+CAMPOS_OBLIGATORIOS = CAMPOS_BASE
 
 
 class DocumentoValidadoInvalido(ValueError):
@@ -126,13 +128,25 @@ def _validar_documento_validado(id_tipo_documento, nombre_archivo, campos):
         raise DocumentoValidadoInvalido("El tipo de documento es obligatorio.")
     if not nombre_archivo.lower().endswith(".pdf"):
         raise DocumentoValidadoInvalido("Solo se aceptan documentos PDF.")
-    _validar_campos_obligatorios(campos)
+    tipo_documento = _obtener_tipo_para_validacion(id_tipo_documento)
+    _validar_campos_obligatorios(campos, tipo_documento)
 
 
-def _validar_campos_obligatorios(campos):
-    faltantes = [campo for campo in CAMPOS_OBLIGATORIOS if not str(campos.get(campo, "")).strip()]
+def _obtener_tipo_para_validacion(id_tipo_documento):
+    try:
+        return obtener_tipo_documento(id_tipo_documento)
+    except TipoDocumentoNoEncontrado as error:
+        raise DocumentoValidadoInvalido(str(error)) from error
+
+
+def _validar_campos_obligatorios(campos, tipo_documento):
+    faltantes = _campos_faltantes(campos, campos_obligatorios_tipo(tipo_documento))
     if faltantes:
         raise DocumentoValidadoInvalido(f"Faltan campos validados: {', '.join(faltantes)}")
+
+
+def _campos_faltantes(campos, obligatorios):
+    return [campo for campo in obligatorios if not str(campos.get(campo, "")).strip()]
 
 
 def _crear_documento_validado(id_tipo_documento, ruta_pdf, nombre_archivo, campos, texto_ocr):
