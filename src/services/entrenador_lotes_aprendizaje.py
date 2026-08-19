@@ -10,6 +10,9 @@ from config import EPOCAS_ENTRENAMIENTO_LOTE, MODELS_DIR
 from src.services.configuracion_campos_documento import campos_evaluables_tipo, mapa_etiquetas_campos
 from src.services.gestor_tipos_documento import obtener_ruta_modelo_activo, obtener_tipo_documento
 
+LONGITUD_MAXIMA_TEXTO_ENTRENAMIENTO = 6000
+RADIO_CONTEXTO_ENTIDAD = 220
+
 
 def entrenar_y_evaluar_lote(id_lote, documentos):
     tipo_documento = obtener_tipo_documento(documentos[0]["id_tipo_documento"])
@@ -50,12 +53,38 @@ def crear_ejemplos_entrenamiento(nlp, tipo_documento, documentos):
 
 
 def crear_ejemplo_documento(nlp, tipo_documento, documento):
-    texto = documento.get("texto_ocr", "")
     campos = documento.get("campos_validados", {})
+    texto = recortar_texto_entrenamiento(documento.get("texto_ocr", ""), campos)
     entidades = buscar_entidades_validadas(texto, campos, mapa_etiquetas_campos(tipo_documento))
     if not entidades:
         return None
     return crear_ejemplo_alineado(nlp, texto, entidades)
+
+
+def recortar_texto_entrenamiento(texto, campos):
+    if len(texto) <= LONGITUD_MAXIMA_TEXTO_ENTRENAMIENTO:
+        return texto
+    fragmentos = crear_fragmentos_entrenamiento(texto, campos)
+    return "\n".join(fragmentos) if fragmentos else texto[:LONGITUD_MAXIMA_TEXTO_ENTRENAMIENTO]
+
+
+def crear_fragmentos_entrenamiento(texto, campos):
+    fragmentos = []
+    for valor in campos.values():
+        fragmento = extraer_fragmento_valor(texto, valor)
+        if fragmento and fragmento not in fragmentos:
+            fragmentos.append(fragmento)
+    return fragmentos
+
+
+def extraer_fragmento_valor(texto, valor):
+    valor = str(valor or "").strip()
+    inicio = texto.lower().find(valor.lower())
+    if inicio < 0:
+        return ""
+    desde = max(0, inicio - RADIO_CONTEXTO_ENTIDAD)
+    hasta = min(len(texto), inicio + len(valor) + RADIO_CONTEXTO_ENTIDAD)
+    return texto[desde:hasta]
 
 
 def crear_ejemplo_alineado(nlp, texto, entidades):
@@ -221,11 +250,20 @@ def alias_campos_contexto():
 
 
 def extraer_valor_etiquetado(texto, etiqueta):
+    valor_json = extraer_valor_json(texto, etiqueta)
+    if valor_json:
+        return valor_json
     patron = rf"(?i)(?:^|[\n\r,{{|#\s])(?:\"?\*?\*?{re.escape(etiqueta)}\"?\*?\*?)\s*(?:[:=]|\|)\s*\"?([^\"\n\r,|}}]+)"
     coincidencia = re.search(patron, texto)
     if not coincidencia:
         return ""
     return limpiar_valor_contexto(coincidencia.group(1))
+
+
+def extraer_valor_json(texto, etiqueta):
+    patron = rf'(?i)"{re.escape(etiqueta)}"\s*:\s*"([^"]+)"'
+    coincidencia = re.search(patron, texto)
+    return limpiar_valor_contexto(coincidencia.group(1)) if coincidencia else ""
 
 
 def limpiar_valor_contexto(valor):
@@ -275,9 +313,80 @@ def siguiente_fila_datos(filas, inicio):
 
 
 def campo_correcto(campo, esperado, obtenido):
+    if not str(esperado or "").strip():
+        return not str(obtenido or "").strip()
+    if es_campo_fecha(campo, esperado):
+        return normalizar_fecha(esperado) == normalizar_fecha(obtenido)
+    if es_campo_importe(campo, esperado):
+        return normalizar_importe(esperado) == normalizar_importe(obtenido)
     if campo in ["alu_matricula", "matricula", "numero_control"]:
         return normalizar_texto(esperado) == normalizar_texto(obtenido)
-    return similitud_texto(esperado, obtenido) >= 0.9
+    return similitud_texto(esperado, obtenido) >= umbral_similitud(campo, esperado)
+
+
+def es_campo_fecha(campo, valor):
+    return "date" in str(campo).lower() or "fecha" in str(campo).lower() or bool(extraer_fecha(valor))
+
+
+def es_campo_importe(campo, valor):
+    clave = str(campo).lower()
+    pistas = ["total", "income", "spending", "amount", "price", "worth", "tax", "importe"]
+    return any(pista in clave for pista in pistas) or bool(extraer_importe(valor))
+
+
+def normalizar_fecha(valor):
+    fecha = extraer_fecha(valor)
+    return "-".join(fecha) if fecha else normalizar_texto(valor)
+
+
+def extraer_fecha(valor):
+    texto = str(valor or "")
+    formatos = [r"\b(\d{4})-(\d{1,2})-(\d{1,2})\b", r"\b(\d{1,2})/(\d{1,2})/(\d{2,4})\b"]
+    for indice, patron in enumerate(formatos):
+        coincidencia = re.search(patron, texto)
+        if coincidencia:
+            return ordenar_fecha(coincidencia.groups(), indice)
+    return None
+
+
+def ordenar_fecha(partes, indice_formato):
+    if indice_formato == 0:
+        ano, mes, dia = partes
+    else:
+        mes, dia, ano = partes
+    ano = f"20{ano}" if len(ano) == 2 else ano
+    return ano.zfill(4), mes.zfill(2), dia.zfill(2)
+
+
+def normalizar_importe(valor):
+    importe = extraer_importe(valor)
+    if importe is None:
+        return normalizar_texto(valor)
+    return f"{importe:.2f}"
+
+
+def extraer_importe(valor):
+    numeros = re.findall(r"[-+]?\d[\d.,]*", str(valor or ""))
+    if not numeros:
+        return None
+    return convertir_importe(numeros[-1])
+
+
+def convertir_importe(valor):
+    texto = str(valor).replace(" ", "")
+    texto = texto.replace(",", ".") if texto.count(",") == 1 and texto.count(".") == 0 else texto.replace(",", "")
+    try:
+        return float(texto)
+    except ValueError:
+        return None
+
+
+def umbral_similitud(campo, esperado):
+    if len(normalizar_texto(esperado)) > 35:
+        return 0.75
+    if str(campo).lower() in ["seller", "client", "address", "company"]:
+        return 0.8
+    return 0.9
 
 
 def calcular_f1_campos(resultados):
@@ -322,7 +431,9 @@ def crear_recomendaciones(empeorados, mejorados):
 
 
 def normalizar_texto(valor):
-    return "".join(str(valor or "").lower().split())
+    texto = str(valor or "").lower().replace("<br>", " ").replace("_", " ")
+    texto = re.sub(r"[^a-z0-9áéíóúñ]+", "", texto)
+    return texto
 
 
 def similitud_texto(esperado, obtenido):

@@ -61,6 +61,27 @@ class TestEntrenadorLotesAprendizaje(unittest.TestCase):
         self.assertEqual(predicciones["jurisdiction"], "California")
         self.assertEqual(predicciones["effective_date"], "2014-07-24")
 
+    def test_compara_importes_con_moneda_y_coma_decimal(self):
+        self.assertTrue(entrenador.campo_correcto("total", "$8,25", "$ 8,25"))
+        self.assertTrue(entrenador.campo_correcto("income", "29312.00", "$29,312.00"))
+
+    def test_compara_fechas_normalizadas(self):
+        self.assertTrue(entrenador.campo_correcto("invoice_date", "10/15/2012", "2012-10-15"))
+        self.assertFalse(entrenador.campo_correcto("invoice_date", "10/15/2012", "2012-10-16"))
+
+    def test_compara_texto_largo_con_ruido_de_formato(self):
+        esperado = "Patel, Thompson and Montgomery<br>356 Kyle Vista"
+        obtenido = "Patel Thompson and Montgomery 356 Kyle Vista"
+
+        self.assertTrue(entrenador.campo_correcto("seller", esperado, obtenido))
+
+    def test_recorta_texto_largo_conservando_valor_validado(self):
+        texto = "A" * 7000 + " respuesta esperada " + "B" * 7000
+        recortado = entrenador.recortar_texto_entrenamiento(texto, {"answer": "respuesta esperada"})
+
+        self.assertLess(len(recortado), 1000)
+        self.assertIn("respuesta esperada", recortado)
+
 
 def modelo_con_entidades():
     nlp = spacy.blank("es")
