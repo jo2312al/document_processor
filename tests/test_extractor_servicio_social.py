@@ -51,6 +51,12 @@ class TestExtractorServicioSocial(unittest.TestCase):
 
         self.assertEqual(entidades["MATRICULA"], "211160233")
 
+    def test_extrae_carta_con_ruido_linux_en_prefijo_c(self):
+        entidades = extraer_entidades_servicio_social(texto_carta_con_ruido_linux())
+
+        self.assertEqual(entidades["NOMBRE_COMPLETO"], "NAYIVE YEZMIN PANTOJA ROSALES")
+        self.assertEqual(entidades["OFICIO"], "SGC/009/2026")
+
 
 def texto_carta_terminacion():
     return """
@@ -74,6 +80,16 @@ def texto_constancia_liberacion():
     de control 211160233, de la carrera de INGENIER{A INOUSTRIAL, realizo su SERVICIO SOCIAL en INSTITUTO
     TECNOLOGICO DE VILLAHERMOSA, participando en el programa: APOYO A LA EDUCACION, cubriendo un total de 486
     horas, durante el periodo comprendido del 25 DE AGOSTO DE 2025 AL 25 DE FEBRERO DE 2026.
+    """
+
+
+def texto_carta_con_ruido_linux():
+    return """
+    Oficio Núm. SGC/009/2026.
+    CARTA DE TERMINACIÓN DE SERVICIO SOCIAL
+    Por este medio me permito informarle que el € NAYIVE YEZMIN PANTOJA ROSALES., de la cerrera de LICENCIATURA
+    EN ADMINISTRACION con número de control 20300618, realizó su Servicio Social en la dependencia: INSTITUTO
+    TECNOLÓGICO DE VILLAHERMOSA, en el programa denominado: APOYO A LA EDUCACIÓN.
     """
 
 

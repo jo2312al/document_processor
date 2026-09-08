@@ -108,6 +108,7 @@ def extraer_numero_control(texto):
 
 def extraer_nombre_completo(texto):
     patrones = [
+        r"(?i)que el\s+(?:C\.?\s+|[^A-ZÁÉÍÓÚÑa-záéíóúñ]{1,4}\s*)?([A-ZÁÉÍÓÚÑa-záéíóúñ\s]{8,90}?)[\.,]+\s+de la",
         r"(?i)al C\.?\s+([A-ZÁÉÍÓÚÑa-záéíóúñ\s]{8,90}?)(?:,\s+con\s+numero|,\s+con\s+número)",
         r"(?i)que el C\.?\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{8,80}?)[\.,]+\s+de la",
         r"(?i)que e[lt]\s*[\(\{]la[\)\}]\s*C\.?\s+([A-ZÁÉÍÓÚÑa-záéíóúñ\s]{8,80}?)(?:\s+realiz|,|\.)",
@@ -169,7 +170,11 @@ def extraer_horas(texto):
 
 
 def extraer_oficio(texto):
-    return buscar_patron(texto, r"(?i)oficio\s+num\.?\s*([A-Z0-9/\-]+)")
+    patrones = [
+        r"(?i)oficio\s+n[uú]m\.?\s*([A-Z0-9/\-]+)",
+        r"(?i)no\.\s+de\s+oficio\s*:\s*([A-Z0-9/\-]+)",
+    ]
+    return buscar_primer_patron(texto, patrones)
 
 
 def extraer_responsable(texto):
