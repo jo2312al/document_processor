@@ -1,6 +1,6 @@
 import json
 
-from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, Response, current_app, jsonify, redirect, render_template, request, url_for
 
 from src.api.archivos import eliminar_si_existe, guardar_pdf_temporal, validar_pdf_subido
 from src.api.autenticacion import (
@@ -22,6 +22,11 @@ from src.services.gestor_preprocesamiento_documental import extraer_texto_docume
 from src.services.gestor_tipos_documento import listar_tipos_documento
 
 rutas_publicas = Blueprint("rutas_publicas", __name__)
+
+
+@rutas_publicas.route("/favicon.ico", methods=["GET"])
+def favicon_vacio():
+    return Response(status=204)
 
 
 @rutas_publicas.route("/", methods=["GET"])

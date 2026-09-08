@@ -86,7 +86,11 @@ function iniciarFormulario(evento, texto) {
 }
 
 function activarTab(tabId) {
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('activo', tab.dataset.tab === tabId));
+    document.querySelectorAll('.tab').forEach(tab => {
+        const activo = tab.dataset.tab === tabId;
+        tab.classList.toggle('activo', activo);
+        tab.classList.toggle('active', activo);
+    });
     document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('activo', panel.id === `tab-${tabId}`));
     if (tabId === 'aprendizaje') cargarLotes();
     if (tabId === 'revision') cargarRevision();
@@ -160,11 +164,14 @@ function renderTipos() {
 }
 
 function crearCardTipo(tipo) {
+    const wrapper = document.createElement('div');
     const card = document.createElement('div');
+    wrapper.className = 'col-12';
     card.className = `tipo tipo-card ${tipo.id_tipo_documento === tipoSeleccionado ? 'activo' : ''}`;
     card.innerHTML = htmlTipoDocumento(tipo);
     card.querySelectorAll('[data-accion]').forEach(boton => configurarAccionTipo(boton, tipo));
-    return card;
+    wrapper.appendChild(card);
+    return wrapper;
 }
 
 function configurarAccionTipo(boton, tipo) {
@@ -173,7 +180,7 @@ function configurarAccionTipo(boton, tipo) {
 
 function htmlTipoDocumento(tipo) {
     const plantilla = tipo.tiene_plantilla_activa ? 'Plantilla activa' : 'Sin plantilla';
-    return `<div class="fila-titulo"><div><strong>${tipo.nombre}</strong><p class="muted">${tipo.id_tipo_documento}</p></div><span class="badge ${tipo.estado === 'activo' ? 'ok' : 'warn'}">${tipo.estado}</span></div><p class="muted">${tipo.descripcion || 'Sin descripcion registrada.'}</p><p class="muted">Modelo: ${tipo.modelo_activo || 'sin modelo'} - ${plantilla}</p><div class="tipo-acciones"><button class="fantasma" type="button" data-accion="documento">Ver</button><button class="fantasma" type="button" data-accion="campos">Campos</button><button class="fantasma" type="button" data-accion="plantilla">Plantilla</button><button class="fantasma" type="button" data-accion="entrenamiento">Anotar</button><button class="fantasma" type="button" data-accion="aprendizaje">Aprendizaje</button><button class="fantasma" type="button" data-accion="modelo">Modelos</button></div>`;
+    return `<div class="fila-titulo"><div><strong>${tipo.nombre}</strong><p class="muted">${tipo.id_tipo_documento}</p></div><span class="badge ${tipo.estado === 'activo' ? 'ok' : 'warn'}">${tipo.estado}</span></div><p class="muted">${tipo.descripcion || 'Sin descripcion registrada.'}</p><p class="muted">Modelo: ${tipo.modelo_activo || 'sin modelo'} - ${plantilla}</p><div class="tipo-acciones"><button class="btn btn-outline-primary btn-sm fantasma" type="button" data-accion="documento">Ver</button><button class="btn btn-outline-primary btn-sm fantasma" type="button" data-accion="campos">Campos</button><button class="btn btn-outline-primary btn-sm fantasma" type="button" data-accion="plantilla">Plantilla</button><button class="btn btn-outline-primary btn-sm fantasma" type="button" data-accion="entrenamiento">Anotar</button><button class="btn btn-outline-primary btn-sm fantasma" type="button" data-accion="aprendizaje">Aprendizaje</button><button class="btn btn-outline-primary btn-sm fantasma" type="button" data-accion="modelo">Modelos</button></div>`;
 }
 
 async function seleccionarTipo(idTipo, tabDestino = 'documento') {
@@ -231,7 +238,7 @@ function pasoGuia(nombre, detalle, tab, listo) {
 function htmlPasoGuia(paso) {
     const clase = paso.listo ? 'ok' : 'pendiente';
     const accion = paso.listo ? 'Abrir' : 'Completar';
-    return `<button type="button" class="guia-paso ${clase}" data-ir-tab="${paso.tab}"><span>${paso.nombre}</span><strong>${paso.detalle}</strong><em>${accion}</em></button>`;
+    return `<div class="col-12 col-sm-6 col-xl"><button type="button" class="guia-paso ${clase}" data-ir-tab="${paso.tab}"><span>${paso.nombre}</span><strong>${paso.detalle}</strong><em>${accion}</em></button></div>`;
 }
 
 function renderPlantilla(tipo) {
@@ -264,7 +271,7 @@ function actualizarAyudaCampos(campos) {
 }
 
 function agregarCampoVista(lista, select, campo) {
-    lista.innerHTML += `<div class="fila"><div class="fila-titulo"><strong>${campo.nombre}</strong><span class="badge ${campo.obligatorio ? 'ok' : ''}">${campo.etiqueta_entidad}</span></div><p class="muted">${campo.clave} - ${campo.tipo_dato || 'texto'}</p></div>`;
+    lista.innerHTML += `<div class="col-12 col-md-6"><div class="fila h-100"><div class="fila-titulo"><strong>${campo.nombre}</strong><span class="badge ${campo.obligatorio ? 'ok' : ''}">${campo.etiqueta_entidad}</span></div><p class="muted">${campo.clave} - ${campo.tipo_dato || 'texto'}</p></div></div>`;
     select.appendChild(crearOpcionCampo(campo));
 }
 
@@ -284,11 +291,14 @@ function renderModelos(modelos) {
 }
 
 function crearModeloVista(modelo) {
+    const wrapper = document.createElement('div');
     const div = document.createElement('div');
     const clase = modelo.estado === 'activo' ? 'ok' : modelo.estado === 'rechazado' ? 'error' : 'warn';
-    div.className = 'fila';
+    wrapper.className = 'col-12 col-md-6';
+    div.className = 'fila h-100';
     div.innerHTML = `<div class="fila-titulo"><strong>${modelo.nombre_modelo}</strong><span class="badge ${clase}">${modelo.estado}</span></div><p class="muted">${modelo.documentos_entrenamiento || 0} documentos - F1 ${modelo.metricas?.f1_entidades ?? '-'}</p>`;
-    return div;
+    wrapper.appendChild(div);
+    return wrapper;
 }
 
 async function cargarDocumentosEntrenamiento() {
@@ -312,12 +322,15 @@ function renderDocumentos(documentos) {
 }
 
 function crearDocumentoVista(doc) {
+    const wrapper = document.createElement('div');
     const boton = document.createElement('button');
+    wrapper.className = 'col-12 col-md-6';
     boton.type = 'button';
     boton.className = 'tipo';
     boton.innerHTML = `<strong>${doc.nombre_archivo}</strong><br><span class="muted">${doc.estado} - ${(doc.anotaciones || []).length} anotaciones</span>`;
     boton.onclick = () => seleccionarDocumentoEntrenamiento(doc);
-    return boton;
+    wrapper.appendChild(boton);
+    return wrapper;
 }
 
 function seleccionarDocumentoEntrenamiento(doc) {
@@ -353,26 +366,29 @@ function renderLotes(lotes) {
 }
 
 function crearLote(lote) {
+    const wrapper = document.createElement('div');
     const div = document.createElement('div');
+    wrapper.className = 'col-12';
     div.className = 'fila stack';
     div.innerHTML = htmlLote(lote);
     div.querySelector('button').onclick = evento => entrenarLote(lote.id_lote, evento.currentTarget);
-    return div;
+    wrapper.appendChild(div);
+    return wrapper;
 }
 
 function htmlLote(lote) {
-    return `<div class="fila-titulo"><div><strong>Lote ${lote.id_lote.slice(0,8)}</strong><p class="muted">${(lote.documentos || []).length} documentos - ${lote.estado}</p></div><button class="fantasma" type="button">Entrenar lote</button></div>${htmlMetricas(lote)}${htmlRecomendaciones(lote)}`;
+    return `<div class="fila-titulo"><div><strong>Lote ${lote.id_lote.slice(0,8)}</strong><p class="muted">${(lote.documentos || []).length} documentos - ${lote.estado}</p></div><button class="btn btn-outline-primary btn-sm fantasma" type="button">Entrenar lote</button></div>${htmlMetricas(lote)}${htmlRecomendaciones(lote)}`;
 }
 
 function htmlMetricas(lote) {
     const comp = lote.decision?.comparacion || {};
     const cards = Object.entries(comp).map(([campo, datos]) => htmlMetrica(campo, datos)).join('');
-    return cards ? `<div class="metricas">${cards}</div>` : '';
+    return cards ? `<div class="row g-3">${cards}</div>` : '';
 }
 
 function htmlMetrica(campo, datos) {
     const clase = datos.resultado === 'mejoro' ? 'ok' : datos.resultado === 'empeoro' ? 'error' : 'warn';
-    return `<div class="metric-card"><strong>${campo}</strong><p class="muted">F1 anterior ${datos.f1_anterior} - F1 candidato ${datos.f1_candidato}</p><span class="badge ${clase}">${datos.resultado}</span></div>`;
+    return `<div class="col-12 col-md-6"><div class="metric-card h-100"><strong>${campo}</strong><p class="muted">F1 anterior ${datos.f1_anterior} - F1 candidato ${datos.f1_candidato}</p><span class="badge ${clase}">${datos.resultado}</span></div></div>`;
 }
 
 function htmlRecomendaciones(lote) {
@@ -418,12 +434,15 @@ function renderRevision(registros) {
 }
 
 function crearRevisionVista(registro) {
+    const wrapper = document.createElement('div');
     const boton = document.createElement('button');
+    wrapper.className = 'col-12';
     boton.type = 'button';
     boton.className = 'tipo';
     boton.innerHTML = htmlRevision(registro);
     boton.onclick = () => abrirRevision(registro.id_revision);
-    return boton;
+    wrapper.appendChild(boton);
+    return wrapper;
 }
 
 function htmlRevision(registro) {
@@ -468,6 +487,7 @@ function renderCamposRevision(campos) {
 
 function inputRevision(clave, valor) {
     const label = document.createElement('label');
+    label.className = 'col-12 col-md-6 form-label fw-semibold';
     label.textContent = clave;
     label.appendChild(crearInputRevision(clave, valor));
     return label;
@@ -475,6 +495,7 @@ function inputRevision(clave, valor) {
 
 function crearInputRevision(clave, valor) {
     const input = document.createElement('input');
+    input.className = 'form-control mt-1';
     input.name = clave;
     input.value = valor || '';
     input.placeholder = `Escribe ${clave}`;
@@ -526,7 +547,7 @@ async function cargarApiKeys() {
 
 function renderApiKeys(keys) {
     const lista = document.getElementById('lista-api-keys');
-    lista.innerHTML = keys.map(key => `<div class="fila"><strong>${key.nombre}</strong><p class="muted">${key.prefijo}</p></div>`).join('') || '<div class="vacio">Sin API keys.</div>';
+    lista.innerHTML = keys.map(key => `<div class="col-12 col-md-6"><div class="fila h-100"><strong>${key.nombre}</strong><p class="muted">${key.prefijo}</p></div></div>`).join('') || '<div class="vacio">Sin API keys.</div>';
 }
 
 function actualizarEjemplosApi() {
@@ -631,7 +652,7 @@ function renderPlantillaCreada(plantilla) {
 
 function htmlCampoPlantilla(campo) {
     const ubicacion = campo.ubicacion || {};
-    return `<div class="fila"><strong>${campo.clave_campo}</strong><p class="muted">${campo.texto_detectado} - confianza ${campo.confianza}</p><p class="muted">x:${ubicacion.x}, y:${ubicacion.y}, ancho:${ubicacion.ancho}, alto:${ubicacion.alto}</p></div>`;
+    return `<div class="fila mb-2"><strong>${campo.clave_campo}</strong><p class="muted">${campo.texto_detectado} - confianza ${campo.confianza}</p><p class="muted">x:${ubicacion.x}, y:${ubicacion.y}, ancho:${ubicacion.ancho}, alto:${ubicacion.alto}</p></div>`;
 }
 
 async function crearApiKey(evento) {

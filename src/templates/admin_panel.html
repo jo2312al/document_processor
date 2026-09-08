@@ -4,162 +4,269 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consola de aprendizaje documental</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/admin.css">
 </head>
-<body>
-    <div class="layout">
-        <aside class="sidebar">
-            <div class="brand">
-                <h1>Consola documental</h1>
-                <p>Panel administrativo para definir documentos, revisar evidencias y controlar modelos OCR/NLP.</p>
+<body class="bg-body-tertiary">
+    <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
+        <div class="container-fluid px-3 px-lg-4">
+            <a class="navbar-brand fw-bold text-primary" href="/admin">
+                <i class="bi bi-layers me-2"></i>Consola documental
+            </a>
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-primary btn-sm" href="/analizador">
+                    <i class="bi bi-file-earmark-search me-1"></i>Analizador
+                </a>
+                <a class="btn btn-outline-secondary btn-sm" href="/logout">
+                    <i class="bi bi-box-arrow-right me-1"></i>Salir
+                </a>
             </div>
+        </div>
+    </nav>
 
-            <div class="token">
-                <a href="/analizador">Abrir analizador publico</a>
-                <a href="/logout">Cerrar sesion</a>
-            </div>
-
-            <nav class="nav">
-                <button class="tab activo" type="button" data-tab="documento" data-paso="01">Documento</button>
-                <button class="tab" type="button" data-tab="campos" data-paso="02">Campos</button>
-                <button class="tab" type="button" data-tab="plantilla" data-paso="03">Plantilla</button>
-                <button class="tab" type="button" data-tab="entrenamiento" data-paso="04">Anotacion</button>
-                <button class="tab" type="button" data-tab="revision" data-paso="05">Revision</button>
-                <button class="tab" type="button" data-tab="aprendizaje" data-paso="06">Aprendizaje</button>
-                <button class="tab" type="button" data-tab="modelo" data-paso="07">Modelos</button>
-                <button class="tab" type="button" data-tab="api" data-paso="08">API</button>
-            </nav>
-        </aside>
-
-        <main class="contenido">
-            <section class="cabecera">
-                <div class="cabecera-top">
-                    <div>
-                        <h1 id="detalle-titulo">Selecciona un tipo documental</h1>
-                        <p id="detalle-descripcion" class="muted">Administra estructura, OCR, validacion humana, entrenamiento por lotes y publicacion del modelo.</p>
-                    </div>
-                    <div class="acciones">
-                        <span id="detalle-estado" class="badge">sin documento</span>
-                        <span id="detalle-modelo" class="badge">sin modelo</span>
+    <main class="container-fluid px-3 px-lg-4 py-4">
+        <div class="row g-4">
+            <aside class="col-12 col-lg-3 col-xl-2">
+                <div class="card shadow-sm sticky-lg-top admin-sidebar">
+                    <div class="card-body">
+                        <h1 class="h5 fw-bold">Administracion</h1>
+                        <p class="text-secondary small">Configura documentos, campos, revision, aprendizaje y API.</p>
+                        <div class="nav nav-pills flex-lg-column gap-2" role="tablist">
+                            <button class="tab nav-link active text-start" type="button" data-tab="documento" data-paso="01"><i class="bi bi-file-earmark-text me-2"></i>Documento</button>
+                            <button class="tab nav-link text-start" type="button" data-tab="campos" data-paso="02"><i class="bi bi-list-check me-2"></i>Campos</button>
+                            <button class="tab nav-link text-start" type="button" data-tab="plantilla" data-paso="03"><i class="bi bi-bounding-box me-2"></i>Plantilla</button>
+                            <button class="tab nav-link text-start" type="button" data-tab="entrenamiento" data-paso="04"><i class="bi bi-pencil-square me-2"></i>Anotacion</button>
+                            <button class="tab nav-link text-start" type="button" data-tab="revision" data-paso="05"><i class="bi bi-clipboard-check me-2"></i>Revision</button>
+                            <button class="tab nav-link text-start" type="button" data-tab="aprendizaje" data-paso="06"><i class="bi bi-diagram-3 me-2"></i>Aprendizaje</button>
+                            <button class="tab nav-link text-start" type="button" data-tab="modelo" data-paso="07"><i class="bi bi-cpu me-2"></i>Modelos</button>
+                            <button class="tab nav-link text-start" type="button" data-tab="api" data-paso="08"><i class="bi bi-key me-2"></i>API</button>
+                        </div>
                     </div>
                 </div>
-                <div class="resumen">
-                    <div class="dato"><span class="muted">Campos</span><strong id="resumen-campos">0</strong></div>
-                    <div class="dato"><span class="muted">Documentos OCR</span><strong id="resumen-documentos">0</strong></div>
-                    <div class="dato"><span class="muted">Lotes</span><strong id="resumen-lotes">0</strong></div>
-                    <div class="dato"><span class="muted">Ultima decision</span><strong id="resumen-decision">-</strong></div>
+            </aside>
+
+            <section class="col-12 col-lg-9 col-xl-10">
+                <div class="row g-4">
+                    <section class="col-12">
+                        <div class="card shadow-sm border-primary-subtle">
+                            <div class="card-body">
+                                <div class="row g-3 align-items-start">
+                                    <div class="col-12 col-xl">
+                                        <h2 id="detalle-titulo" class="h3 fw-bold mb-2">Selecciona un tipo documental</h2>
+                                        <p id="detalle-descripcion" class="text-secondary mb-0">Administra estructura, OCR, validacion humana, entrenamiento por lotes y publicacion del modelo.</p>
+                                    </div>
+                                    <div class="col-12 col-xl-auto d-flex gap-2 flex-wrap">
+                                        <span id="detalle-estado" class="badge text-bg-secondary">sin documento</span>
+                                        <span id="detalle-modelo" class="badge text-bg-light border">sin modelo</span>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-3">
+                                    <div class="col-6 col-xl-3"><div class="card bg-light border-0"><div class="card-body"><span class="text-secondary small">Campos</span><strong id="resumen-campos" class="d-block h3 mb-0 text-primary">0</strong></div></div></div>
+                                    <div class="col-6 col-xl-3"><div class="card bg-light border-0"><div class="card-body"><span class="text-secondary small">Documentos OCR</span><strong id="resumen-documentos" class="d-block h3 mb-0 text-primary">0</strong></div></div></div>
+                                    <div class="col-6 col-xl-3"><div class="card bg-light border-0"><div class="card-body"><span class="text-secondary small">Lotes</span><strong id="resumen-lotes" class="d-block h3 mb-0 text-primary">0</strong></div></div></div>
+                                    <div class="col-6 col-xl-3"><div class="card bg-light border-0"><div class="card-body"><span class="text-secondary small">Ultima decision</span><strong id="resumen-decision" class="d-block h3 mb-0 text-primary">-</strong></div></div></div>
+                                </div>
+                                <p id="estado-global" class="estado small fw-semibold mb-0 mt-3"></p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="col-12">
+                        <div class="card shadow-sm flujo-panel">
+                            <div class="card-body">
+                                <div class="row g-3 align-items-center">
+                                    <div class="col">
+                                        <h2 class="h5 fw-bold mb-1">Ruta de configuracion</h2>
+                                        <p class="text-secondary small mb-0">Avanza hasta dejar el documento listo para recibir correcciones y aprender por lotes.</p>
+                                    </div>
+                                    <div class="col-auto"><button class="btn btn-outline-secondary btn-sm fantasma" type="button" data-ir-tab="documento">Revisar inicio</button></div>
+                                </div>
+                                <div id="guia-progreso" class="row g-2 mt-3"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="tab-documento" class="tab-panel activo col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white d-flex justify-content-between gap-3 align-items-center flex-wrap">
+                                <div><h2 class="h5 fw-bold mb-1">Tipos documentales</h2><p class="text-secondary small mb-0">Cada documento tiene acciones directas para configurarlo.</p></div>
+                                <button id="abrir-wizard-tipo" class="btn btn-primary" type="button"><i class="bi bi-plus-lg me-1"></i>Crear tipo documental</button>
+                            </div>
+                            <div class="card-body"><div id="lista-tipos" class="row g-3 lista"></div></div>
+                        </div>
+                    </section>
+
+                    <section id="tab-campos" class="tab-panel col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white d-flex justify-content-between gap-3 align-items-center flex-wrap">
+                                <div><h2 class="h5 fw-bold mb-1">Campos obligatorios y opcionales</h2><p class="text-secondary small mb-0">Define que datos debe extraer el sistema.</p></div>
+                                <button class="btn btn-outline-secondary btn-sm fantasma" type="button" data-ir-tab="plantilla">Siguiente: plantilla</button>
+                            </div>
+                            <div class="card-body">
+                                <div id="lista-campos" class="row g-3 lista mb-4"></div>
+                                <form id="form-campo" class="row g-3">
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">Nombre</label><input class="form-control" name="nombre" required placeholder="Matricula"></div>
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">Clave</label><input class="form-control" name="clave" placeholder="alu_matricula"></div>
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">Etiqueta spaCy</label><input class="form-control" name="etiqueta_entidad" required placeholder="MATRICULA"></div>
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">Tipo</label><select class="form-select" name="tipo_dato"><option value="texto">Texto</option><option value="fecha">Fecha</option><option value="catalogo">Catalogo</option></select></div>
+                                    <div class="col-12"><div class="form-check"><input class="form-check-input" name="obligatorio" type="checkbox" id="campo-obligatorio"><label class="form-check-label fw-semibold" for="campo-obligatorio">Campo obligatorio</label></div></div>
+                                    <div class="col-12"><label class="form-label fw-semibold">Descripcion</label><textarea class="form-control" name="descripcion"></textarea></div>
+                                    <div class="col-12 d-grid d-md-block"><button class="btn btn-primary" type="submit">Agregar campo</button></div>
+                                </form>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="tab-plantilla" class="tab-panel col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white d-flex justify-content-between gap-3 align-items-center flex-wrap">
+                                <div><h2 class="h5 fw-bold mb-1">Plantilla aprendida</h2><p class="text-secondary small mb-0">Sube el primer PDF validado y escribe sus valores reales.</p></div>
+                                <div class="d-flex gap-2"><span id="estado-plantilla" class="badge text-bg-warning">sin plantilla</span><button class="btn btn-outline-secondary btn-sm fantasma" type="button" data-ir-tab="entrenamiento">Siguiente: anotar</button></div>
+                            </div>
+                            <div class="card-body">
+                                <form id="form-plantilla" class="row g-3 mb-4">
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">Nombre de plantilla</label><input class="form-control" name="nombre_plantilla" placeholder="Formato base"></div>
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">PDF de referencia</label><input class="form-control" name="file" type="file" accept=".pdf" required></div>
+                                    <div class="col-12"><label class="form-label fw-semibold">Valores del primer documento</label><textarea class="form-control" name="campos_muestra" required placeholder='{"alu_matricula":"2411367","NOMBRE_COMPLETO":"Juan Perez Lopez","alu_carrera":"Ingenieria","alu_servicio":"ENERO A JULIO"}'></textarea></div>
+                                    <div class="col-12 d-grid d-md-block"><button class="btn btn-primary" type="submit">Crear plantilla desde OCR</button></div>
+                                </form>
+                                <div id="plantilla-resultado" class="vacio">Cuando se cree una plantilla, aqui apareceran sus campos ubicados.</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="tab-entrenamiento" class="tab-panel col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white d-flex justify-content-between gap-3 align-items-center flex-wrap">
+                                <div><h2 class="h5 fw-bold mb-1">Anotacion asistida</h2><p class="text-secondary small mb-0">Sube un PDF, revisa el OCR y guarda evidencia de entrenamiento.</p></div>
+                                <button class="btn btn-outline-secondary btn-sm fantasma" type="button" data-ir-tab="revision">Siguiente: revision</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-4">
+                                    <div class="col-12 col-xl-4">
+                                        <form id="form-entrenamiento" class="row g-3 mb-4">
+                                            <div class="col-12"><label class="form-label fw-semibold">PDF</label><input class="form-control" name="file" type="file" accept=".pdf" required></div>
+                                            <div class="col-12"><label class="form-label fw-semibold">Preprocesamiento</label><select class="form-select" name="metodo_preprocesamiento"><option value="tesseract">Tesseract</option><option value="docling">Docling</option></select></div>
+                                            <div class="col-12 d-grid"><button class="btn btn-primary" type="submit">Subir y generar OCR</button></div>
+                                        </form>
+                                        <div id="lista-documentos-entrenamiento" class="row g-3 lista"></div>
+                                    </div>
+                                    <div class="col-12 col-xl-8">
+                                        <textarea id="texto-ocr-entrenamiento" class="form-control ocr mb-3" readonly placeholder="Selecciona un documento para revisar OCR."></textarea>
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-6"><label class="form-label fw-semibold">Campo</label><select id="campo-anotacion" class="form-select"></select></div>
+                                            <div class="col-12 col-md-6"><label class="form-label fw-semibold">Texto seleccionado</label><input id="texto-anotado" class="form-control" readonly></div>
+                                            <div class="col-12 d-grid d-md-block"><button id="guardar-anotacion" class="btn btn-primary" type="button">Guardar anotacion</button></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="tab-revision" class="tab-panel col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white d-flex justify-content-between gap-3 align-items-center flex-wrap">
+                                <div><h2 class="h5 fw-bold mb-1">Revision de documentos</h2><p class="text-secondary small mb-0">Corrige los datos encontrados y deja vacio lo que el documento no trae.</p></div>
+                                <div class="d-flex gap-2"><span id="resumen-revision" class="badge text-bg-warning">0 pendientes</span><button id="refrescar-revision" class="btn btn-outline-primary btn-sm fantasma" type="button">Refrescar</button><button class="btn btn-outline-secondary btn-sm fantasma" type="button" data-ir-tab="aprendizaje">Siguiente: aprendizaje</button></div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-4 revision-layout">
+                                    <div class="col-12 col-xl-4"><div id="lista-revision" class="row g-3 lista"></div></div>
+                                    <div class="col-12 col-xl-8">
+                                        <div id="detalle-revision" class="vacio mb-3">Selecciona una pagina para revisar los datos detectados.</div>
+                                        <form id="form-revision" class="row g-3 revision-form" hidden>
+                                            <div id="campos-revision" class="row g-3"></div>
+                                            <div class="col-12"><label class="form-label fw-semibold">OCR de referencia</label><textarea id="ocr-revision" class="form-control ocr" readonly></textarea></div>
+                                            <div class="col-12 d-grid d-md-block"><button class="btn btn-primary" type="submit">Guardar correccion y mandar al lote</button></div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="tab-aprendizaje" class="tab-panel col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white d-flex justify-content-between gap-3 align-items-center flex-wrap">
+                                <div><h2 class="h5 fw-bold mb-1">Lotes de entrenamiento</h2><p class="text-secondary small mb-0">Documentos validados alimentan el modelo por lotes.</p></div>
+                                <button id="refrescar-lotes" class="btn btn-outline-primary btn-sm fantasma" type="button">Refrescar</button>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3 timeline mb-4">
+                                    <div class="col-12 col-md"><div class="card h-100"><div class="card-body"><strong>1. Recibir</strong><p class="text-secondary small mb-0">PDF + datos corregidos</p></div></div></div>
+                                    <div class="col-12 col-md"><div class="card h-100"><div class="card-body"><strong>2. Acumular</strong><p class="text-secondary small mb-0">Umbral configurable</p></div></div></div>
+                                    <div class="col-12 col-md"><div class="card h-100"><div class="card-body"><strong>3. Entrenar</strong><p class="text-secondary small mb-0">Celery + Redis</p></div></div></div>
+                                    <div class="col-12 col-md"><div class="card h-100"><div class="card-body"><strong>4. Evaluar</strong><p class="text-secondary small mb-0">Campo por campo</p></div></div></div>
+                                    <div class="col-12 col-md"><div class="card h-100"><div class="card-body"><strong>5. Activar</strong><p class="text-secondary small mb-0">Solo si no empeora</p></div></div></div>
+                                </div>
+                                <div id="lista-lotes" class="row g-3 lista"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="tab-modelo" class="tab-panel col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white d-flex justify-content-between gap-3 align-items-center flex-wrap">
+                                <div><h2 class="h5 fw-bold mb-1">Versiones de modelo</h2><p class="text-secondary small mb-0">Consulta modelo activo y registra candidatos evaluados.</p></div>
+                                <button class="btn btn-outline-secondary btn-sm fantasma" type="button" data-ir-tab="api">Siguiente: API</button>
+                            </div>
+                            <div class="card-body">
+                                <div id="lista-modelos" class="row g-3 lista mb-4"></div>
+                                <form id="form-modelo" class="row g-3">
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">Nombre modelo</label><input class="form-control" name="nombre_modelo" required></div>
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">Ruta modelo</label><input class="form-control" name="ruta_modelo"></div>
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">Documentos usados</label><input class="form-control" name="documentos_entrenamiento" type="number" min="0" value="0"></div>
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">F1 entidades</label><input class="form-control" name="f1_entidades" type="number" min="0" max="1" step="0.0001"></div>
+                                    <div class="col-12"><div class="form-check"><input class="form-check-input" name="activar" type="checkbox" id="modelo-activo"><label class="form-check-label fw-semibold" for="modelo-activo">Activar como modelo en produccion</label></div></div>
+                                    <div class="col-12"><label class="form-label fw-semibold">Observaciones</label><textarea class="form-control" name="observaciones"></textarea></div>
+                                    <div class="col-12 d-grid d-md-block"><button class="btn btn-primary" type="submit">Registrar modelo</button></div>
+                                </form>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="tab-api" class="tab-panel col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white"><h2 class="h5 fw-bold mb-0">Conexion API</h2></div>
+                            <div class="card-body">
+                                <div class="alert alert-warning">El sistema externo usa <code>/extract</code> para extraer y <code>/aprendizaje/documentos-validados</code> para enviar correcciones validadas.</div>
+                                <form id="form-api-key" class="row g-3 mb-4">
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">Nombre integracion</label><input class="form-control" name="nombre" required placeholder="Sistema publico"></div>
+                                    <div class="col-12 col-md-6"><label class="form-label fw-semibold">Permiso</label><select class="form-select" name="permiso"><option value="extract">Extraccion y aprendizaje</option></select></div>
+                                    <div class="col-12 d-grid d-md-block"><button class="btn btn-primary" type="submit">Generar API key</button></div>
+                                </form>
+                                <div id="api-key-generada" class="vacio mb-4" style="display:none;"><strong>API key generada</strong><pre id="api-key-valor"></pre></div>
+                                <div id="lista-api-keys" class="row g-3 lista mb-4"></div>
+                                <div class="row g-3"><div class="col-12 col-xl-6"><pre id="ejemplo-curl"></pre></div><div class="col-12 col-xl-6"><pre id="ejemplo-js"></pre></div></div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
-                <p id="estado-global" class="estado"></p>
             </section>
-
-            <section class="panel flujo-panel">
-                <div class="panel-titulo">
-                    <div>
-                        <h2>Ruta de configuracion</h2>
-                        <p class="muted">Avanza de izquierda a derecha hasta dejar el documento listo para recibir correcciones y aprender por lotes.</p>
-                    </div>
-                    <button class="fantasma" type="button" data-ir-tab="documento">Revisar inicio</button>
-                </div>
-                <div id="guia-progreso" class="guia-progreso"></div>
-            </section>
-
-            <section id="tab-documento" class="tab-panel activo">
-                <section class="panel stack">
-                    <div class="panel-titulo">
-                        <div>
-                            <h2>Tipos documentales</h2>
-                            <p class="muted">Cada documento tiene acciones directas para configurarlo sin buscar en el menu.</p>
-                        </div>
-                        <button id="abrir-wizard-tipo" type="button">Crear tipo documental</button>
-                    </div>
-                    <div id="lista-tipos" class="lista"></div>
-                </section>
-            </section>
-
-            <section id="tab-campos" class="tab-panel">
-                <section class="panel stack">
-                    <div class="panel-titulo"><div><h2>Campos obligatorios y opcionales</h2><p class="muted">Define exactamente que datos debe extraer el sistema. Ejemplo: matricula, nombre completo, periodo o total.</p></div><button class="fantasma" type="button" data-ir-tab="plantilla">Siguiente: plantilla</button></div>
-                    <div id="lista-campos" class="lista"></div>
-                    <form id="form-campo" class="stack">
-                        <div class="grid2"><label>Nombre<input name="nombre" required placeholder="Matricula"></label><label>Clave<input name="clave" placeholder="alu_matricula"></label></div>
-                        <div class="grid2"><label>Etiqueta spaCy<input name="etiqueta_entidad" required placeholder="MATRICULA"></label><label>Tipo<select name="tipo_dato"><option value="texto">Texto</option><option value="fecha">Fecha</option><option value="catalogo">Catalogo</option></select></label></div>
-                        <label><span><input name="obligatorio" type="checkbox"> Campo obligatorio</span></label>
-                        <label>Descripcion<textarea name="descripcion"></textarea></label>
-                        <button type="submit">Agregar campo</button>
-                    </form>
-                </section>
-            </section>
-
-            <section id="tab-plantilla" class="tab-panel">
-                <section class="panel stack">
-                    <div class="panel-titulo"><div><h2>Plantilla aprendida</h2><p class="muted">Sube el primer PDF validado y escribe sus valores reales. El sistema ubicara texto, posiciones y contexto.</p></div><div class="acciones"><span id="estado-plantilla" class="badge">sin plantilla</span><button class="fantasma" type="button" data-ir-tab="entrenamiento">Siguiente: anotar</button></div></div>
-                    <form id="form-plantilla" class="stack">
-                        <div class="grid2"><label>Nombre de plantilla<input name="nombre_plantilla" placeholder="Formato base"></label><label>PDF de referencia<input name="file" type="file" accept=".pdf" required></label></div>
-                        <label>Valores del primer documento<textarea name="campos_muestra" required placeholder='{"alu_matricula":"2411367","NOMBRE_COMPLETO":"Juan Perez Lopez","alu_carrera":"Ingenieria","alu_servicio":"ENERO A JULIO"}'></textarea></label>
-                        <button type="submit">Crear plantilla desde OCR</button>
-                    </form>
-                    <div id="plantilla-resultado" class="vacio">Cuando se cree una plantilla, aqui apareceran sus campos ubicados.</div>
-                </section>
-            </section>
-
-            <section id="tab-entrenamiento" class="tab-panel">
-                <section class="panel stack"><div class="panel-titulo"><div><h2>Anotacion asistida</h2><p class="muted">Sube un PDF, revisa el OCR, selecciona el texto exacto y guardalo como evidencia de entrenamiento.</p></div><button class="fantasma" type="button" data-ir-tab="revision">Siguiente: revision</button></div><div class="split"><div class="stack"><form id="form-entrenamiento" class="stack"><label>PDF<input name="file" type="file" accept=".pdf" required></label><label>Preprocesamiento<select name="metodo_preprocesamiento"><option value="tesseract">Tesseract</option><option value="docling">Docling</option></select></label><button type="submit">Subir y generar OCR</button></form><div id="lista-documentos-entrenamiento" class="lista"></div></div><div class="stack"><textarea id="texto-ocr-entrenamiento" class="ocr" readonly placeholder="Selecciona un documento para revisar OCR."></textarea><div class="grid2"><label>Campo<select id="campo-anotacion"></select></label><label>Texto seleccionado<input id="texto-anotado" readonly></label></div><button id="guardar-anotacion" type="button">Guardar anotacion</button><p class="muted">Tip: selecciona en el OCR exactamente el valor del campo antes de guardar.</p></div></div></section>
-            </section>
-
-            <section id="tab-revision" class="tab-panel">
-                <section class="panel stack">
-                    <div class="panel-titulo">
-                        <div>
-                            <h2>Revision de documentos</h2>
-                            <p class="muted">Corrige los datos encontrados y deja vacio lo que el documento no trae. Cada dato validado puede alimentar el entrenamiento.</p>
-                        </div>
-                        <div class="acciones">
-                            <span id="resumen-revision" class="badge warn">0 pendientes</span>
-                            <button id="refrescar-revision" class="fantasma" type="button">Refrescar</button>
-                            <button class="fantasma" type="button" data-ir-tab="aprendizaje">Siguiente: aprendizaje</button>
-                        </div>
-                    </div>
-                    <div class="split revision-layout">
-                        <div class="stack">
-                            <div id="lista-revision" class="lista"></div>
-                        </div>
-                        <div class="stack">
-                            <div id="detalle-revision" class="vacio">Selecciona una pagina para revisar los datos detectados.</div>
-                            <form id="form-revision" class="stack revision-form" hidden>
-                                <div id="campos-revision" class="grid2"></div>
-                                <label>OCR de referencia<textarea id="ocr-revision" class="ocr" readonly></textarea></label>
-                                <button type="submit">Guardar correccion y mandar al lote</button>
-                            </form>
-                        </div>
-                    </div>
-                </section>
-            </section>
-
-            <section id="tab-aprendizaje" class="tab-panel">
-                <section class="panel stack"><div class="fila-titulo"><div><h2>Lotes de entrenamiento</h2><p class="muted">Documentos validados desde el sistema externo alimentan el modelo por lotes.</p></div><button id="refrescar-lotes" class="fantasma" type="button">Refrescar</button></div><div class="timeline"><div class="paso"><strong>1. Recibir</strong><p class="muted">PDF + datos corregidos</p></div><div class="paso"><strong>2. Acumular</strong><p class="muted">Umbral configurable</p></div><div class="paso"><strong>3. Entrenar</strong><p class="muted">Celery + Redis</p></div><div class="paso"><strong>4. Evaluar</strong><p class="muted">Campo por campo</p></div><div class="paso"><strong>5. Activar</strong><p class="muted">Solo si no empeora</p></div></div><div id="lista-lotes" class="lista"></div></section>
-            </section>
-
-            <section id="tab-modelo" class="tab-panel">
-                <section class="panel stack"><div class="panel-titulo"><div><h2>Versiones de modelo</h2><p class="muted">Consulta que modelo esta activo y registra candidatos solo cuando tengas una evaluacion confiable.</p></div><button class="fantasma" type="button" data-ir-tab="api">Siguiente: API</button></div><div id="lista-modelos" class="lista"></div><form id="form-modelo" class="stack"><div class="grid2"><label>Nombre modelo<input name="nombre_modelo" required></label><label>Ruta modelo<input name="ruta_modelo"></label></div><div class="grid2"><label>Documentos usados<input name="documentos_entrenamiento" type="number" min="0" value="0"></label><label>F1 entidades<input name="f1_entidades" type="number" min="0" max="1" step="0.0001"></label></div><label><span><input name="activar" type="checkbox"> Activar como modelo en produccion</span></label><label>Observaciones<textarea name="observaciones"></textarea></label><button type="submit">Registrar modelo</button></form></section>
-            </section>
-
-            <section id="tab-api" class="tab-panel">
-                <section class="panel stack"><h2>Conexion API</h2><div class="callout">El sistema externo usa <code>/extract</code> para extraer y <code>/aprendizaje/documentos-validados</code> para enviar correcciones validadas.</div><form id="form-api-key" class="stack"><div class="grid2"><label>Nombre integracion<input name="nombre" required placeholder="Sistema publico"></label><label>Permiso<select name="permiso"><option value="extract">Extraccion y aprendizaje</option></select></label></div><button type="submit">Generar API key</button></form><div id="api-key-generada" class="vacio" style="display:none;"><strong>API key generada</strong><pre id="api-key-valor"></pre></div><div id="lista-api-keys" class="lista"></div><div class="grid2"><pre id="ejemplo-curl"></pre><pre id="ejemplo-js"></pre></div></section>
-            </section>
-        </main>
-    </div>
+        </div>
+    </main>
 
     <div id="modal-tipo" class="modal-fondo" aria-hidden="true">
-        <form id="form-tipo" class="modal stack">
-            <div class="fila-titulo"><div><h2>Crear tipo documental</h2><p class="muted">Completa un paso a la vez para registrar un nuevo documento.</p></div><button id="cerrar-wizard-tipo" class="fantasma" type="button">Cerrar</button></div>
-            <div class="pasos-wizard"><span class="paso-wizard activo"></span><span class="paso-wizard"></span><span class="paso-wizard"></span><span class="paso-wizard"></span></div>
-            <div class="wizard-pagina activa" data-pagina-tipo="0"><label>Nombre<input name="nombre" required placeholder="Ficha de pago"></label><div class="acciones"><button type="button" data-next-tipo>Continuar</button></div></div>
-            <div class="wizard-pagina" data-pagina-tipo="1"><label>Descripcion<textarea name="descripcion" placeholder="Documento usado para validar pagos escolares."></textarea></label><div class="acciones"><button class="fantasma" type="button" data-prev-tipo>Regresar</button><button type="button" data-next-tipo>Continuar</button></div></div>
-            <div class="wizard-pagina" data-pagina-tipo="2"><div class="grid2"><label>Estado<select name="estado"><option value="borrador">Borrador</option><option value="activo">Activo</option></select></label><label>Modelo inicial<input name="modelo_activo" value="spacy_model"></label></div><div class="acciones"><button class="fantasma" type="button" data-prev-tipo>Regresar</button><button type="button" data-next-tipo>Continuar</button></div></div>
-            <div class="wizard-pagina" data-pagina-tipo="3"><div id="resumen-tipo" class="resumen-confirmacion"></div><div class="acciones"><button class="fantasma" type="button" data-prev-tipo>Regresar</button><button type="submit">Crear tipo documental</button></div></div>
+        <form id="form-tipo" class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div><h2 class="modal-title h5 fw-bold">Crear tipo documental</h2><p class="text-secondary small mb-0">Completa un paso a la vez para registrar un nuevo documento.</p></div>
+                    <button id="cerrar-wizard-tipo" class="btn-close" type="button" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="progress pasos-wizard mb-4" role="progressbar"><span class="paso-wizard activo"></span><span class="paso-wizard"></span><span class="paso-wizard"></span><span class="paso-wizard"></span></div>
+                    <div class="wizard-pagina activa" data-pagina-tipo="0"><label class="form-label fw-semibold">Nombre</label><input class="form-control form-control-lg" name="nombre" required placeholder="Ficha de pago"><div class="text-end mt-3"><button class="btn btn-primary" type="button" data-next-tipo>Continuar</button></div></div>
+                    <div class="wizard-pagina" data-pagina-tipo="1"><label class="form-label fw-semibold">Descripcion</label><textarea class="form-control" name="descripcion" placeholder="Documento usado para validar pagos escolares."></textarea><div class="d-flex justify-content-end gap-2 mt-3"><button class="btn btn-outline-secondary fantasma" type="button" data-prev-tipo>Regresar</button><button class="btn btn-primary" type="button" data-next-tipo>Continuar</button></div></div>
+                    <div class="wizard-pagina" data-pagina-tipo="2"><div class="row g-3"><div class="col-12 col-md-6"><label class="form-label fw-semibold">Estado</label><select class="form-select" name="estado"><option value="borrador">Borrador</option><option value="activo">Activo</option></select></div><div class="col-12 col-md-6"><label class="form-label fw-semibold">Modelo inicial</label><input class="form-control" name="modelo_activo" value="spacy_model"></div></div><div class="d-flex justify-content-end gap-2 mt-3"><button class="btn btn-outline-secondary fantasma" type="button" data-prev-tipo>Regresar</button><button class="btn btn-primary" type="button" data-next-tipo>Continuar</button></div></div>
+                    <div class="wizard-pagina" data-pagina-tipo="3"><div id="resumen-tipo" class="resumen-confirmacion"></div><div class="d-flex justify-content-end gap-2 mt-3"><button class="btn btn-outline-secondary fantasma" type="button" data-prev-tipo>Regresar</button><button class="btn btn-primary" type="submit">Crear tipo documental</button></div></div>
+                </div>
+            </div>
         </form>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/admin.js"></script>
 </body>
 </html>
