@@ -25,7 +25,8 @@ class TestPredictServicioSocial(unittest.TestCase):
         )
         self.assertIn("numero_control", respuesta["fields"])
         self.assertIn("nombre_estudiante", respuesta["fields"])
-        self.assertNotIn("alu_nombre", respuesta["fields"])
+        self.assertEqual(respuesta["fields"]["alu_matricula"]["value"], "20300618")
+        self.assertEqual(respuesta["fields"]["alu_paterno"]["value"], "PANTOJA")
 
 
 def texto_servicio_social():

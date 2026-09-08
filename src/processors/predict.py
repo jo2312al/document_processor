@@ -33,6 +33,14 @@ from src.services.extractor_servicio_social import (
 ARCHIVO_LOG = os.path.join(LOGS_DIR, "predict.log")
 TIPO_SERVICIO_SOCIAL_GENERAL = "carta_terminacion_servicio_social"
 TIPOS_SERVICIO_SOCIAL_LEGADOS = {"constancia_servicio"}
+ALIAS_SERVICIO_SOCIAL = {
+    "alu_matricula": ("numero_control", "MATRICULA"),
+    "alu_nombre": (None, "NOMBRE"),
+    "alu_paterno": (None, "PATERNO"),
+    "alu_materno": (None, "MATERNO"),
+    "alu_carrera": ("carrera", "CARRERA"),
+    "alu_servicio": ("periodo", "SERVICIO"),
+}
 logging.basicConfig(
     filename=ARCHIVO_LOG,
     level=getattr(logging, LOGGING_LEVEL),
@@ -187,6 +195,7 @@ def _enriquecer_entidades_contexto(texto_ocr, entidades, clasificacion):
 
 def _construir_respuesta(tipo_documento, entidades, resultado_ocr, clasificacion):
     campos, faltantes = construir_campos_extraidos(tipo_documento, entidades)
+    campos = _agregar_alias_servicio_social(campos, entidades, clasificacion)
     return {
         "tipo_documento": construir_resumen_tipo(tipo_documento),
         "clasificacion_documental": clasificacion,
@@ -195,6 +204,27 @@ def _construir_respuesta(tipo_documento, entidades, resultado_ocr, clasificacion
         "confianza_global": calcular_confianza_campos(campos),
         "preprocesamiento": _resumir_preprocesamiento(resultado_ocr),
         "image_dimensions": obtener_dimensiones_pagina(resultado_ocr),
+    }
+
+
+def _agregar_alias_servicio_social(campos, entidades, clasificacion):
+    if clasificacion["familia"] != "servicio_social":
+        return campos
+    campos_con_alias = dict(campos)
+    for alias, fuentes in ALIAS_SERVICIO_SOCIAL.items():
+        campos_con_alias.setdefault(alias, _crear_alias_campo(alias, campos, entidades, fuentes))
+    return campos_con_alias
+
+
+def _crear_alias_campo(alias, campos, entidades, fuentes):
+    clave_origen, etiqueta = fuentes
+    campo = campos.get(clave_origen, {}) if clave_origen else {}
+    valor = campo.get("value") or entidades.get(etiqueta) or "NO ENCONTRADO"
+    return {
+        "nombre": alias,
+        "etiqueta_entidad": campo.get("etiqueta_entidad", etiqueta),
+        "obligatorio": False,
+        "value": valor,
     }
 
 
