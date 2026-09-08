@@ -140,13 +140,16 @@ def _obtener_tipo_para_validacion(id_tipo_documento):
 
 
 def _validar_campos_obligatorios(campos, tipo_documento):
-    faltantes = _campos_faltantes(campos, campos_obligatorios_tipo(tipo_documento))
-    if faltantes:
-        raise DocumentoValidadoInvalido(f"Faltan campos validados: {', '.join(faltantes)}")
+    if not _tiene_campos_utiles(campos):
+        raise DocumentoValidadoInvalido("Debe enviarse al menos un campo validado.")
 
 
 def _campos_faltantes(campos, obligatorios):
     return [campo for campo in obligatorios if not str(campos.get(campo, "")).strip()]
+
+
+def _tiene_campos_utiles(campos):
+    return any(str(valor or "").strip() for valor in campos.values())
 
 
 def _crear_documento_validado(id_tipo_documento, ruta_pdf, nombre_archivo, campos, texto_ocr):

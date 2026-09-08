@@ -74,6 +74,17 @@ class TestGestorTiposDocumento(unittest.TestCase):
         repositorio = CatalogoDocumentalMySQL()
         self.assertIn("host", repositorio.configuracion)
 
+    def test_agregar_version_json_reemplaza_modelo_existente(self):
+        from src.services.gestor_tipos_documento import _agregar_version_json
+
+        tipo_documento = {"versiones_modelo": [{"nombre_modelo": "modelo_v1", "estado": "pruebas"}]}
+        version = {"nombre_modelo": "modelo_v1", "estado": "rechazado", "activar": False}
+
+        _agregar_version_json(tipo_documento, version)
+
+        self.assertEqual(len(tipo_documento["versiones_modelo"]), 1)
+        self.assertEqual(tipo_documento["versiones_modelo"][0]["estado"], "rechazado")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,4 +1,5 @@
 import unittest
+import tempfile
 
 import spacy
 
@@ -21,6 +22,15 @@ class TestEntrenadorLotesAprendizaje(unittest.TestCase):
 
         self.assertEqual(metricas["dependencia"]["f1"], 1.0)
         self.assertEqual(metricas["programa"]["f1"], 1.0)
+
+    def test_evalua_solo_campos_presentes_en_documento(self):
+        documento = documento_solicitud()
+        documento["campos_validados"]["programa"] = ""
+
+        metricas = entrenador.evaluar_modelo(modelo_con_entidades(), tipo_solicitud(), [documento])
+
+        self.assertEqual(metricas["programa"]["total"], 0)
+        self.assertEqual(metricas["dependencia"]["total"], 1)
 
     def test_crea_entidad_alineada_con_simbolos_de_ocr(self):
         nlp = spacy.blank("es")
@@ -81,6 +91,34 @@ class TestEntrenadorLotesAprendizaje(unittest.TestCase):
 
         self.assertLess(len(recortado), 1000)
         self.assertIn("respuesta esperada", recortado)
+
+    def test_crea_modelo_base_desde_modelo_activo_si_existe(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            modelo = spacy.blank("es")
+            modelo.add_pipe("ner")
+            modelo.to_disk(temp_dir)
+
+            nlp, modelo_nuevo = entrenador.crear_modelo_base({"modelo_activo": temp_dir})
+
+        self.assertFalse(modelo_nuevo)
+        self.assertTrue(nlp.has_pipe("ner"))
+
+    def test_no_activa_modelo_con_campo_obligatorio_insuficiente(self):
+        decision = entrenador.decidir_activacion(tipo_solicitud(), metricas_campo_debil())
+
+        self.assertFalse(decision["activar"])
+        self.assertIn("nombre_completo", decision["recomendaciones"][0])
+
+    def test_activa_modelo_si_mejora_y_cumple_obligatorios(self):
+        decision = entrenador.decidir_activacion(tipo_solicitud(), metricas_modelo_apto())
+
+        self.assertTrue(decision["activar"])
+        self.assertIn("dependencia", decision["recomendaciones"][0])
+
+    def test_no_bloquea_activacion_si_campo_no_aparece_en_lote(self):
+        decision = entrenador.decidir_activacion(tipo_solicitud(), metricas_sin_programa())
+
+        self.assertTrue(decision["activar"])
 
 
 def modelo_con_entidades():
@@ -144,6 +182,36 @@ def documento_solicitud():
             "dependencia": "Banco de Alimentos",
             "programa": "Apoyo comunitario",
         },
+    }
+
+
+def metricas_campo_debil():
+    return {
+        "activo": metricas_por_campo(0.2, 0.0, 0.5, 0.5),
+        "candidato": metricas_por_campo(1.0, 0.0, 0.7, 0.7),
+    }
+
+
+def metricas_modelo_apto():
+    return {
+        "activo": metricas_por_campo(0.8, 0.8, 0.7, 0.8),
+        "candidato": metricas_por_campo(0.8, 0.8, 0.9, 0.8),
+    }
+
+
+def metricas_sin_programa():
+    return {
+        "activo": metricas_por_campo(0.7, 0.7, 0.7, 0.0, total_programa=0),
+        "candidato": metricas_por_campo(0.8, 0.8, 0.8, 0.0, total_programa=0),
+    }
+
+
+def metricas_por_campo(matricula, nombre, dependencia, programa, total_programa=1):
+    return {
+        "matricula": {"f1": matricula, "total": 1},
+        "nombre_completo": {"f1": nombre, "total": 1},
+        "dependencia": {"f1": dependencia, "total": 1},
+        "programa": {"f1": programa, "total": total_programa},
     }
 
 

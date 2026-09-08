@@ -1,135 +1,255 @@
 {
-    "tipo_documento_predeterminado":  "constancia_servicio",
-    "tipos_documento":  [
-                            {
-                                "id_tipo_documento":  "constancia_servicio",
-                                "nombre":  "Constancia de servicio",
-                                "descripcion":  "Documento academico usado por la version inicial del sistema.",
-                                "modelo_activo":  "spacy_model",
-                                "estado":  "activo",
-                                "campos":  [
-                                               {
-                                                   "clave":  "alu_matricula",
-                                                   "nombre":  "Matricula",
-                                                   "etiqueta_entidad":  "MATRICULA",
-                                                   "obligatorio":  true
-                                               },
-                                               {
-                                                   "clave":  "alu_nombre",
-                                                   "nombre":  "Nombre",
-                                                   "etiqueta_entidad":  "NOMBRE",
-                                                   "obligatorio":  true
-                                               },
-                                               {
-                                                   "clave":  "alu_paterno",
-                                                   "nombre":  "Apellido paterno",
-                                                   "etiqueta_entidad":  "PATERNO",
-                                                   "obligatorio":  true
-                                               },
-                                               {
-                                                   "clave":  "alu_materno",
-                                                   "nombre":  "Apellido materno",
-                                                   "etiqueta_entidad":  "MATERNO",
-                                                   "obligatorio":  true
-                                               },
-                                               {
-                                                   "clave":  "alu_carrera",
-                                                   "nombre":  "Carrera",
-                                                   "etiqueta_entidad":  "CARRERA",
-                                                   "obligatorio":  true
-                                               },
-                                               {
-                                                   "clave":  "alu_servicio",
-                                                   "nombre":  "Servicio",
-                                                   "etiqueta_entidad":  "SERVICIO",
-                                                   "obligatorio":  false
-                                               }
-                                           ],
-                                "rasgos_documento":  {
-                                                         "palabras_clave":  [
-                                                                                "matricula",
-                                                                                "nombre",
-                                                                                "carrera",
-                                                                                "servicio"
-                                                                            ],
-                                                         "paginas_esperadas":  1,
-                                                         "origen":  "escaneado_o_digital"
-                                                     },
-                                "preprocesamiento":  {
-                                                         "metodo":  "tesseract",
-                                                         "permitir_docling":  true
-                                                     },
-                                "versiones_modelo":  [
-
-                                                     ]
-                            },
-                            {
-                                "id_tipo_documento":  "reporte_residencia",
-                                "nombre":  "Reporte de residencia profesional",
-                                "descripcion":  "Tipo documental preparado para entrenar un modelo especializado de residencia profesional.",
-                                "modelo_activo":  "spacy_model",
-                                "estado":  "borrador",
-                                "campos":  [
-                                               {
-                                                   "clave":  "nombre_residente",
-                                                   "nombre":  "Nombre del residente",
-                                                   "etiqueta_entidad":  "NOMBRE_RESIDENTE",
-                                                   "obligatorio":  true
-                                               },
-                                               {
-                                                   "clave":  "numero_control",
-                                                   "nombre":  "Numero de control",
-                                                   "etiqueta_entidad":  "NUMERO_CONTROL",
-                                                   "obligatorio":  true
-                                               },
-                                               {
-                                                   "clave":  "carrera",
-                                                   "nombre":  "Carrera",
-                                                   "etiqueta_entidad":  "CARRERA",
-                                                   "obligatorio":  true
-                                               },
-                                               {
-                                                   "clave":  "nombre_proyecto",
-                                                   "nombre":  "Nombre del proyecto",
-                                                   "etiqueta_entidad":  "NOMBRE_PROYECTO",
-                                                   "obligatorio":  true
-                                               },
-                                               {
-                                                   "clave":  "empresa",
-                                                   "nombre":  "Empresa",
-                                                   "etiqueta_entidad":  "EMPRESA",
-                                                   "obligatorio":  true
-                                               },
-                                               {
-                                                   "clave":  "asesor_interno",
-                                                   "nombre":  "Asesor interno",
-                                                   "etiqueta_entidad":  "ASESOR_INTERNO",
-                                                   "obligatorio":  false
-                                               },
-                                               {
-                                                   "clave":  "asesor_externo",
-                                                   "nombre":  "Asesor externo",
-                                                   "etiqueta_entidad":  "ASESOR_EXTERNO",
-                                                   "obligatorio":  false
-                                               }
-                                           ],
-                                "rasgos_documento":  {
-                                                         "palabras_clave":  [
-                                                                                "residencia profesional",
-                                                                                "proyecto",
-                                                                                "asesor",
-                                                                                "empresa"
-                                                                            ],
-                                                         "paginas_esperadas":  1,
-                                                         "origen":  "escaneado_o_digital"
-                                                     },
-                                "preprocesamiento":  {
-                                                         "metodo":  "tesseract",
-                                                         "permitir_docling":  true
-                                                     },
-                                "versiones_modelo":  [
-
-                                                     ]
-                            }
-                        ]
+  "tipo_documento_predeterminado": "constancia_servicio",
+  "tipos_documento": [
+    {
+      "id_tipo_documento": "constancia_servicio",
+      "nombre": "Constancia de servicio",
+      "descripcion": "Documento academico usado por la version inicial del sistema.",
+      "modelo_activo": "spacy_model",
+      "estado": "activo",
+      "campos": [
+        {
+          "clave": "alu_matricula",
+          "nombre": "Matricula",
+          "etiqueta_entidad": "MATRICULA",
+          "obligatorio": true
+        },
+        {
+          "clave": "alu_nombre",
+          "nombre": "Nombre",
+          "etiqueta_entidad": "NOMBRE",
+          "obligatorio": true
+        },
+        {
+          "clave": "alu_paterno",
+          "nombre": "Apellido paterno",
+          "etiqueta_entidad": "PATERNO",
+          "obligatorio": true
+        },
+        {
+          "clave": "alu_materno",
+          "nombre": "Apellido materno",
+          "etiqueta_entidad": "MATERNO",
+          "obligatorio": true
+        },
+        {
+          "clave": "alu_carrera",
+          "nombre": "Carrera",
+          "etiqueta_entidad": "CARRERA",
+          "obligatorio": true
+        },
+        {
+          "clave": "alu_servicio",
+          "nombre": "Servicio",
+          "etiqueta_entidad": "SERVICIO",
+          "obligatorio": false
+        }
+      ],
+      "rasgos_documento": {
+        "palabras_clave": [
+          "matricula",
+          "nombre",
+          "carrera",
+          "servicio"
+        ],
+        "paginas_esperadas": 1,
+        "origen": "escaneado_o_digital"
+      },
+      "preprocesamiento": {
+        "metodo": "tesseract",
+        "permitir_docling": true
+      },
+      "versiones_modelo": []
+    },
+    {
+      "id_tipo_documento": "reporte_residencia",
+      "nombre": "Reporte de residencia profesional",
+      "descripcion": "Tipo documental preparado para entrenar un modelo especializado de residencia profesional.",
+      "modelo_activo": "spacy_model",
+      "estado": "borrador",
+      "campos": [
+        {
+          "clave": "nombre_residente",
+          "nombre": "Nombre del residente",
+          "etiqueta_entidad": "NOMBRE_RESIDENTE",
+          "obligatorio": true
+        },
+        {
+          "clave": "numero_control",
+          "nombre": "Numero de control",
+          "etiqueta_entidad": "NUMERO_CONTROL",
+          "obligatorio": true
+        },
+        {
+          "clave": "carrera",
+          "nombre": "Carrera",
+          "etiqueta_entidad": "CARRERA",
+          "obligatorio": true
+        },
+        {
+          "clave": "nombre_proyecto",
+          "nombre": "Nombre del proyecto",
+          "etiqueta_entidad": "NOMBRE_PROYECTO",
+          "obligatorio": true
+        },
+        {
+          "clave": "empresa",
+          "nombre": "Empresa",
+          "etiqueta_entidad": "EMPRESA",
+          "obligatorio": true
+        },
+        {
+          "clave": "asesor_interno",
+          "nombre": "Asesor interno",
+          "etiqueta_entidad": "ASESOR_INTERNO",
+          "obligatorio": false
+        },
+        {
+          "clave": "asesor_externo",
+          "nombre": "Asesor externo",
+          "etiqueta_entidad": "ASESOR_EXTERNO",
+          "obligatorio": false
+        }
+      ],
+      "rasgos_documento": {
+        "palabras_clave": [
+          "residencia profesional",
+          "proyecto",
+          "asesor",
+          "empresa"
+        ],
+        "paginas_esperadas": 1,
+        "origen": "escaneado_o_digital"
+      },
+      "preprocesamiento": {
+        "metodo": "tesseract",
+        "permitir_docling": true
+      },
+      "versiones_modelo": []
+    },
+    {
+      "id_tipo_documento": "carta_terminacion_servicio_social",
+      "nombre": "Carta de terminacion de servicio social",
+      "descripcion": "Formato variable de servicio social identificado por contexto y reforzado con entrenamiento supervisado.",
+      "modelo_activo": "spacy_model",
+      "estado": "borrador",
+      "campos": [
+        {
+          "clave": "numero_control",
+          "nombre": "Numero de control",
+          "etiqueta_entidad": "MATRICULA",
+          "obligatorio": true,
+          "tipo_dato": "numero",
+          "descripcion": "Identificador academico del estudiante."
+        },
+        {
+          "clave": "nombre_estudiante",
+          "nombre": "Nombre del estudiante",
+          "etiqueta_entidad": "NOMBRE_COMPLETO",
+          "obligatorio": true,
+          "tipo_dato": "texto"
+        },
+        {
+          "clave": "carrera",
+          "nombre": "Carrera",
+          "etiqueta_entidad": "CARRERA",
+          "obligatorio": true,
+          "tipo_dato": "texto"
+        },
+        {
+          "clave": "dependencia",
+          "nombre": "Dependencia",
+          "etiqueta_entidad": "DEPENDENCIA",
+          "obligatorio": false,
+          "tipo_dato": "texto"
+        },
+        {
+          "clave": "programa",
+          "nombre": "Programa",
+          "etiqueta_entidad": "PROGRAMA",
+          "obligatorio": false,
+          "tipo_dato": "texto"
+        },
+        {
+          "clave": "periodo",
+          "nombre": "Periodo de servicio",
+          "etiqueta_entidad": "SERVICIO",
+          "obligatorio": true,
+          "tipo_dato": "texto"
+        },
+        {
+          "clave": "horas",
+          "nombre": "Horas acumuladas",
+          "etiqueta_entidad": "HORAS",
+          "obligatorio": false,
+          "tipo_dato": "numero"
+        },
+        {
+          "clave": "oficio",
+          "nombre": "Numero de oficio",
+          "etiqueta_entidad": "OFICIO",
+          "obligatorio": false,
+          "tipo_dato": "texto"
+        },
+        {
+          "clave": "responsable",
+          "nombre": "Responsable",
+          "etiqueta_entidad": "RESPONSABLE",
+          "obligatorio": false,
+          "tipo_dato": "texto"
+        }
+      ],
+      "rasgos_documento": {
+        "palabras_clave": [
+          "servicio social",
+          "carta de terminacion",
+          "numero de control",
+          "periodo comprendido",
+          "horas"
+        ],
+        "paginas_esperadas": 1,
+        "origen": "escaneado_o_digital"
+      },
+      "preprocesamiento": {
+        "metodo": "tesseract",
+        "permitir_docling": true
+      },
+      "versiones_modelo": [
+        {
+          "nombre_modelo": "carta_terminacion_servicio_social_7500cf72",
+          "ruta_modelo": "C:\\python\\document_processor\\models\\carta_terminacion_servicio_social_7500cf72",
+          "estado": "rechazado",
+          "documentos_entrenamiento": 16,
+          "metricas": {
+            "f1_entidades": 0.5,
+            "campos": {
+              "numero_control": {
+                "correctos": 3,
+                "total": 3,
+                "f1": 1.0
+              },
+              "nombre_estudiante": {
+                "correctos": 0,
+                "total": 3,
+                "f1": 0.0
+              },
+              "carrera": {
+                "correctos": 1,
+                "total": 3,
+                "f1": 0.3333
+              },
+              "periodo": {
+                "correctos": 2,
+                "total": 3,
+                "f1": 0.6667
+              }
+            }
+          },
+          "observaciones": "Campos obligatorios debajo del umbral minimo: nombre_estudiante, carrera",
+          "activar": false,
+          "fecha_registro": "2026-09-04T15:07:07.284969+00:00"
+        }
+      ]
+    }
+  ]
 }

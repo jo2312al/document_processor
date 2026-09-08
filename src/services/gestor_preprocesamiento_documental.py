@@ -32,14 +32,33 @@ def ejecutar_tesseract(imagen_array, idioma="spa", timeout=90):
         ruta_temporal = temporal.name
     try:
         cv2.imwrite(ruta_temporal, imagen_array)
-        comando = [TESSERACT_CMD, ruta_temporal, "stdout", "-l", idioma, "--psm", "6"]
-        resultado = subprocess.run(comando, capture_output=True, text=True, timeout=timeout)
-        if resultado.returncode != 0:
-            raise PreprocesamientoNoDisponible(resultado.stderr)
-        return resultado.stdout
+        return ejecutar_tesseract_archivo(ruta_temporal, idioma, timeout)
     finally:
         if os.path.exists(ruta_temporal):
             os.remove(ruta_temporal)
+
+
+def ejecutar_tesseract_archivo(ruta_imagen, idioma, timeout):
+    """Usa espanol si esta disponible y cae a ingles para continuidad local."""
+    idiomas = [idioma, "eng"] if idioma != "eng" else ["eng"]
+    errores = []
+    for idioma_actual in idiomas:
+        resultado = ejecutar_tesseract_idioma(ruta_imagen, idioma_actual, timeout)
+        if resultado.returncode == 0:
+            return resultado.stdout
+        errores.append(resultado.stderr)
+    raise PreprocesamientoNoDisponible("\n".join(errores))
+
+
+def ejecutar_tesseract_idioma(ruta_imagen, idioma, timeout):
+    comando = [TESSERACT_CMD, ruta_imagen, "stdout", "-l", idioma, "--psm", "6"]
+    return subprocess.run(
+        comando,
+        capture_output=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+    )
 
 
 def extraer_texto_tesseract(ruta_pdf):

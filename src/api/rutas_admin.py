@@ -22,6 +22,13 @@ from src.services.gestor_plantillas_documento import (
     crear_plantilla_desde_pdf,
 )
 from src.services.gestor_preprocesamiento_documental import extraer_texto_documento
+from src.services.gestor_revision_entrenamiento import (
+    RegistroRevisionInvalido,
+    RegistroRevisionNoEncontrado,
+    guardar_correccion_revision,
+    listar_registros_revision,
+    obtener_registro_revision,
+)
 from src.services.gestor_tipos_documento import (
     CatalogoDocumentoInvalido,
     TipoDocumentoNoEncontrado,
@@ -122,6 +129,33 @@ def entrenar_lote_manual(id_lote):
     except LoteAprendizajeNoEncontrado as error:
         return respuesta_error(error, 404)
     except Exception as error:
+        return respuesta_error(error, 500)
+
+
+@rutas_admin.route("/revision-entrenamiento", methods=["GET"])
+def obtener_registros_revision():
+    return respuesta_lista("registros_revision", listar_registros_revision())
+
+
+@rutas_admin.route("/revision-entrenamiento/<id_revision>", methods=["GET"])
+def obtener_registro_revision_detalle(id_revision):
+    try:
+        return respuesta_json("registro_revision", obtener_registro_revision(id_revision))
+    except RegistroRevisionNoEncontrado as error:
+        return respuesta_error(error, 404)
+
+
+@rutas_admin.route("/revision-entrenamiento/<id_revision>/correccion", methods=["POST"])
+def guardar_revision_corregida(id_revision):
+    try:
+        datos = request.get_json(silent=True) or {}
+        return respuesta_json("revision", guardar_correccion_revision(id_revision, datos.get("campos", {})), 201)
+    except RegistroRevisionNoEncontrado as error:
+        return respuesta_error(error, 404)
+    except RegistroRevisionInvalido as error:
+        return respuesta_error(error, 400)
+    except Exception as error:
+        current_app.logger.exception("No se pudo guardar la revision corregida")
         return respuesta_error(error, 500)
 
 

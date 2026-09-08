@@ -285,7 +285,19 @@ def _registrar_version_mysql(id_tipo_documento, version_modelo):
 
 
 def _agregar_version_json(tipo_documento, version_modelo):
-    tipo_documento.setdefault("versiones_modelo", []).append(version_modelo)
+    versiones = tipo_documento.setdefault("versiones_modelo", [])
+    indice = _indice_version_modelo(versiones, version_modelo["nombre_modelo"])
+    if indice >= 0:
+        versiones[indice] = version_modelo
+    else:
+        versiones.append(version_modelo)
     if version_modelo.get("activar") is True:
         tipo_documento["modelo_activo"] = version_modelo["nombre_modelo"]
         version_modelo["estado"] = "activo"
+
+
+def _indice_version_modelo(versiones, nombre_modelo):
+    for indice, version in enumerate(versiones):
+        if version.get("nombre_modelo") == nombre_modelo:
+            return indice
+    return -1

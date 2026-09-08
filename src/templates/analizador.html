@@ -42,12 +42,14 @@
         const cargando = document.getElementById('loader');
         const resultado = document.getElementById('results-pre');
         const tipoDocumento = document.getElementById('tipo-documento');
+        const tipoServicioSocial = 'carta_terminacion_servicio_social';
 
         async function cargarTiposDocumento() {
             const respuesta = await fetch('/tipos-documento');
             const datos = await respuesta.json();
             tipoDocumento.innerHTML = '';
             datos.tipos_documento.forEach(agregarOpcionDocumento);
+            seleccionarTipoInicial(datos.tipos_documento);
         }
 
         function agregarOpcionDocumento(tipo) {
@@ -55,6 +57,11 @@
             opcion.value = tipo.id_tipo_documento;
             opcion.textContent = tipo.nombre;
             tipoDocumento.appendChild(opcion);
+        }
+
+        function seleccionarTipoInicial(tipos) {
+            const existeServicioSocial = tipos.some(tipo => tipo.id_tipo_documento === tipoServicioSocial);
+            if (existeServicioSocial) tipoDocumento.value = tipoServicioSocial;
         }
 
         function mostrarPdfSeleccionado() {
@@ -86,6 +93,7 @@
             const datosFormulario = new FormData();
             datosFormulario.append('file', archivoPdf.files[0]);
             datosFormulario.append('id_tipo_documento', tipoDocumento.value);
+            datosFormulario.append('metodo_preprocesamiento', 'tesseract');
             const respuesta = await fetch('/extract', { method: 'POST', body: datosFormulario });
             const datos = await respuesta.json();
             if (!respuesta.ok) throw new Error(datos.error || 'Error desconocido');
@@ -106,7 +114,7 @@
 
         archivoPdf.addEventListener('change', mostrarPdfSeleccionado);
         formulario.addEventListener('submit', enviarDocumento);
-        cargarTiposDocumento().catch(() => agregarOpcionDocumento({ id_tipo_documento: 'constancia_servicio', nombre: 'Constancia de servicio' }));
+        cargarTiposDocumento().catch(() => agregarOpcionDocumento({ id_tipo_documento: tipoServicioSocial, nombre: 'Servicio social' }));
     </script>
 </body>
 </html>

@@ -5,6 +5,7 @@ let documentoEntrenamientoSeleccionado = null;
 let rangoSeleccionado = null;
 let ultimaApiKey = 'TU_API_KEY';
 let pasoTipo = 0;
+let revisionSeleccionada = null;
 
 iniciarPanel();
 
@@ -18,6 +19,7 @@ function conectarEventos() {
     document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => activarTab(tab.dataset.tab));
     document.querySelectorAll('[data-ir-tab]').forEach(boton => boton.onclick = () => activarTab(boton.dataset.irTab));
     document.getElementById('refrescar-lotes').onclick = evento => cargarLotes(true, evento.currentTarget);
+    document.getElementById('refrescar-revision').onclick = evento => cargarRevision(true, evento.currentTarget);
     document.getElementById('abrir-wizard-tipo').onclick = abrirWizardTipo;
     document.getElementById('cerrar-wizard-tipo').onclick = cerrarWizardTipo;
     document.querySelectorAll('[data-next-tipo]').forEach(boton => boton.onclick = () => moverWizardTipo(1));
@@ -27,6 +29,7 @@ function conectarEventos() {
     document.getElementById('form-api-key').onsubmit = crearApiKey;
     document.getElementById('form-campo').onsubmit = crearCampo;
     document.getElementById('form-modelo').onsubmit = registrarModelo;
+    document.getElementById('form-revision').onsubmit = guardarCorreccionRevision;
     document.getElementById('form-entrenamiento').onsubmit = subirDocumentoEntrenamiento;
     document.getElementById('texto-ocr-entrenamiento').onmouseup = capturarSeleccionOcr;
     document.getElementById('guardar-anotacion').onclick = guardarAnotacion;
@@ -86,6 +89,7 @@ function activarTab(tabId) {
     document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('activo', tab.dataset.tab === tabId));
     document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('activo', panel.id === `tab-${tabId}`));
     if (tabId === 'aprendizaje') cargarLotes();
+    if (tabId === 'revision') cargarRevision();
     if (tabId === 'api') cargarApiKeys();
     mostrarEstado(`Vista ${nombreTab(tabId)} abierta.`, 'ok');
 }
@@ -96,6 +100,7 @@ function nombreTab(tabId) {
         campos:'Campos',
         plantilla:'Plantilla',
         entrenamiento:'Anotacion',
+        revision:'Revision',
         aprendizaje:'Aprendizaje',
         modelo:'Modelos',
         api:'API'
@@ -209,9 +214,14 @@ function pasosConfiguracion(tipo) {
         pasoGuia('Campos', `${(tipo.campos || []).length} registrados`, 'campos', (tipo.campos || []).length > 0),
         pasoGuia('Plantilla', tipo.tiene_plantilla_activa ? 'Activa' : 'Pendiente', 'plantilla', tipo.tiene_plantilla_activa),
         pasoGuia('Anotacion', totalDocumentos ? `${totalDocumentos} PDF OCR` : 'Sin PDF OCR', 'entrenamiento', totalDocumentos > 0),
+        pasoGuia('Revision', textoPendientesRevision(), 'revision', true),
         pasoGuia('Aprendizaje', totalLotes ? `${totalLotes} lote(s)` : 'Sin lotes', 'aprendizaje', totalLotes > 0),
         pasoGuia('API', 'Integracion externa', 'api', true),
     ];
+}
+
+function textoPendientesRevision() {
+    return document.getElementById('resumen-revision')?.textContent || 'Pendientes';
 }
 
 function pasoGuia(nombre, detalle, tab, listo) {
@@ -382,6 +392,126 @@ async function entrenarLote(idLote, boton = null) {
     } finally {
         restaurar();
     }
+}
+
+async function cargarRevision(notificar = false, boton = null) {
+    const restaurar = notificar ? iniciarAccion(boton, 'Actualizando...') : () => {};
+    try {
+        const data = await apiJson('/admin/revision-entrenamiento', {admin:true});
+        renderRevision(data.registros_revision || []);
+        if (notificar) mostrarEstado('Revision actualizada.', 'ok');
+    } catch (error) {
+        document.getElementById('lista-revision').innerHTML = '<div class="vacio">No se pudo cargar la revision.</div>';
+        if (notificar) mostrarEstado(error.message, 'error');
+    } finally {
+        restaurar();
+    }
+}
+
+function renderRevision(registros) {
+    const pendientes = registros.filter(registro => !registro.documento_validado);
+    document.getElementById('resumen-revision').textContent = `${pendientes.length} pendientes`;
+    const lista = document.getElementById('lista-revision');
+    lista.innerHTML = '';
+    pendientes.forEach(registro => lista.appendChild(crearRevisionVista(registro)));
+    if (!pendientes.length) lista.innerHTML = '<div class="vacio">No hay paginas pendientes de revision.</div>';
+}
+
+function crearRevisionVista(registro) {
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'tipo';
+    boton.innerHTML = htmlRevision(registro);
+    boton.onclick = () => abrirRevision(registro.id_revision);
+    return boton;
+}
+
+function htmlRevision(registro) {
+    const faltantes = registro.campos_faltantes?.join(', ') || 'sin faltantes';
+    const clase = registro.apto_entrenamiento ? 'ok' : 'warn';
+    const texto = registro.apto_entrenamiento ? 'Datos encontrados' : 'Requiere captura';
+    return `<strong>Pagina ${registro.pagina}</strong><p class="muted">${nombreArchivo(registro.archivo_origen)}</p><span class="badge ${clase}">${texto}</span><p class="muted">Faltantes: ${faltantes}</p>`;
+}
+
+function nombreArchivo(ruta) {
+    return String(ruta || '').split(/[\\/]/).pop();
+}
+
+async function abrirRevision(idRevision) {
+    try {
+        const data = await apiJson(`/admin/revision-entrenamiento/${idRevision}`, {admin:true});
+        revisionSeleccionada = data.registro_revision;
+        renderDetalleRevision(revisionSeleccionada);
+        mostrarEstado(`Pagina ${revisionSeleccionada.pagina} lista para corregir.`, 'ok');
+    } catch (error) {
+        mostrarEstado(error.message, 'error');
+    }
+}
+
+function renderDetalleRevision(registro) {
+    document.getElementById('detalle-revision').innerHTML = htmlDetalleRevision(registro);
+    document.getElementById('ocr-revision').value = registro.texto_ocr || '';
+    renderCamposRevision(registro.campos_validados || {});
+    document.getElementById('form-revision').hidden = false;
+}
+
+function htmlDetalleRevision(registro) {
+    const subtipo = registro.clasificacion?.subtipo || 'sin clasificacion';
+    return `<strong>${nombreArchivo(registro.archivo_origen)}</strong><p class="muted">Pagina ${registro.pagina} - ${subtipo}</p>`;
+}
+
+function renderCamposRevision(campos) {
+    const contenedor = document.getElementById('campos-revision');
+    contenedor.innerHTML = '';
+    Object.entries(campos).forEach(([clave, valor]) => contenedor.appendChild(inputRevision(clave, valor)));
+}
+
+function inputRevision(clave, valor) {
+    const label = document.createElement('label');
+    label.textContent = clave;
+    label.appendChild(crearInputRevision(clave, valor));
+    return label;
+}
+
+function crearInputRevision(clave, valor) {
+    const input = document.createElement('input');
+    input.name = clave;
+    input.value = valor || '';
+    input.placeholder = `Escribe ${clave}`;
+    return input;
+}
+
+async function guardarCorreccionRevision(evento) {
+    evento.preventDefault();
+    if (!revisionSeleccionada) return mostrarEstado('Selecciona una pagina pendiente.', 'error');
+    const restaurar = iniciarFormulario(evento, 'Guardando...');
+    if (!restaurar) return;
+    try {
+        await enviarCorreccionRevision(evento.currentTarget);
+        await refrescarDespuesDeRevision();
+        mostrarEstado('Correccion guardada y agregada al lote.', 'ok');
+    } catch (error) {
+        mostrarEstado(error.message, 'error');
+    } finally {
+        restaurar();
+    }
+}
+
+async function enviarCorreccionRevision(formulario) {
+    const campos = Object.fromEntries(new FormData(formulario).entries());
+    return apiJson(`/admin/revision-entrenamiento/${revisionSeleccionada.id_revision}/correccion`, {
+        method:'POST',
+        admin:true,
+        body:JSON.stringify({campos}),
+    });
+}
+
+async function refrescarDespuesDeRevision() {
+    document.getElementById('form-revision').hidden = true;
+    document.getElementById('detalle-revision').innerHTML = 'Datos enviados al lote. Selecciona otra pagina para continuar.';
+    revisionSeleccionada = null;
+    await cargarRevision();
+    await cargarLotes();
 }
 
 async function cargarApiKeys() {

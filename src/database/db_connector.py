@@ -1,17 +1,19 @@
+import logging
+import os
+
 import mysql.connector
 from mysql.connector import Error
-import logging
 
 logging.basicConfig(filename='document_processor.log', level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 class DBConnector:
-    def __init__(self, host='localhost', user='root', password='2312', database='servicio'):
+    def __init__(self, host=None, user=None, password=None, database=None):
         self.config = {
-            'host': host,
-            'user': user,
-            'password': password,
-            'database': database
+            'host': host or os.getenv("MYSQL_HOST", "localhost"),
+            'user': user or os.getenv("MYSQL_USER", "root"),
+            'password': password if password is not None else os.getenv("MYSQL_PASSWORD", ""),
+            'database': database or os.getenv("MYSQL_DATABASE", "servicio")
         }
         self.connection = None
         self.logger = logging.getLogger(__name__)

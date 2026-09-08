@@ -1,6 +1,10 @@
 import os
 import platform
 
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 IS_WINDOWS = platform.system() == "Windows"
 
@@ -56,7 +60,7 @@ CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "0") == "1"
 
 MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
 MYSQL_USER = os.getenv("MYSQL_USER", "root")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "2312")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "servicio")
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
 

@@ -23,7 +23,7 @@ class TestGestorLotesAprendizaje(unittest.TestCase):
         self.assertEqual(lote["estado"], "listo_para_entrenar")
         self.assertEqual(lote["documentos_acumulados"], 1)
 
-    def test_registrar_documento_validado_requiere_campos(self):
+    def test_registrar_documento_validado_requiere_algun_campo(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             contexto = preparar_contexto(temp_dir)
             with patch.object(gestor, "APRENDIZAJE_LOTES_PATH", contexto["estado"]), patch.object(gestor, "DOCUMENTOS_VALIDADOS_DIR", temp_dir):
@@ -44,12 +44,19 @@ class TestGestorLotesAprendizaje(unittest.TestCase):
 
         self.assertEqual(documento["campos_validados"]["dependencia"], "Banco de Alimentos")
 
-    def test_registrar_documento_validado_rechaza_obligatorio_dinamico(self):
+    def test_registrar_documento_validado_acepta_datos_parciales(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             contexto = preparar_contexto(temp_dir)
             with contexto_solicitud(temp_dir, contexto):
-                with self.assertRaisesRegex(gestor.DocumentoValidadoInvalido, "dependencia"):
-                    gestor.registrar_documento_validado("solicitud_servicio_social", contexto["pdf"], "solicitud.pdf", {"matricula": "24001"}, "")
+                documento, _ = gestor.registrar_documento_validado(
+                    "solicitud_servicio_social",
+                    contexto["pdf"],
+                    "solicitud.pdf",
+                    {"matricula": "24001"},
+                    "",
+                )
+
+        self.assertEqual(documento["campos_validados"]["matricula"], "24001")
 
 
 def contexto_solicitud(temp_dir, contexto):

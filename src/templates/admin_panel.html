@@ -24,9 +24,10 @@
                 <button class="tab" type="button" data-tab="campos" data-paso="02">Campos</button>
                 <button class="tab" type="button" data-tab="plantilla" data-paso="03">Plantilla</button>
                 <button class="tab" type="button" data-tab="entrenamiento" data-paso="04">Anotacion</button>
-                <button class="tab" type="button" data-tab="aprendizaje" data-paso="05">Aprendizaje</button>
-                <button class="tab" type="button" data-tab="modelo" data-paso="06">Modelos</button>
-                <button class="tab" type="button" data-tab="api" data-paso="07">API</button>
+                <button class="tab" type="button" data-tab="revision" data-paso="05">Revision</button>
+                <button class="tab" type="button" data-tab="aprendizaje" data-paso="06">Aprendizaje</button>
+                <button class="tab" type="button" data-tab="modelo" data-paso="07">Modelos</button>
+                <button class="tab" type="button" data-tab="api" data-paso="08">API</button>
             </nav>
         </aside>
 
@@ -102,7 +103,36 @@
             </section>
 
             <section id="tab-entrenamiento" class="tab-panel">
-                <section class="panel stack"><div class="panel-titulo"><div><h2>Anotacion asistida</h2><p class="muted">Sube un PDF, revisa el OCR, selecciona el texto exacto y guardalo como evidencia de entrenamiento.</p></div><button class="fantasma" type="button" data-ir-tab="aprendizaje">Siguiente: aprendizaje</button></div><div class="split"><div class="stack"><form id="form-entrenamiento" class="stack"><label>PDF<input name="file" type="file" accept=".pdf" required></label><label>Preprocesamiento<select name="metodo_preprocesamiento"><option value="tesseract">Tesseract</option><option value="docling">Docling</option></select></label><button type="submit">Subir y generar OCR</button></form><div id="lista-documentos-entrenamiento" class="lista"></div></div><div class="stack"><textarea id="texto-ocr-entrenamiento" class="ocr" readonly placeholder="Selecciona un documento para revisar OCR."></textarea><div class="grid2"><label>Campo<select id="campo-anotacion"></select></label><label>Texto seleccionado<input id="texto-anotado" readonly></label></div><button id="guardar-anotacion" type="button">Guardar anotacion</button><p class="muted">Tip: selecciona en el OCR exactamente el valor del campo antes de guardar.</p></div></div></section>
+                <section class="panel stack"><div class="panel-titulo"><div><h2>Anotacion asistida</h2><p class="muted">Sube un PDF, revisa el OCR, selecciona el texto exacto y guardalo como evidencia de entrenamiento.</p></div><button class="fantasma" type="button" data-ir-tab="revision">Siguiente: revision</button></div><div class="split"><div class="stack"><form id="form-entrenamiento" class="stack"><label>PDF<input name="file" type="file" accept=".pdf" required></label><label>Preprocesamiento<select name="metodo_preprocesamiento"><option value="tesseract">Tesseract</option><option value="docling">Docling</option></select></label><button type="submit">Subir y generar OCR</button></form><div id="lista-documentos-entrenamiento" class="lista"></div></div><div class="stack"><textarea id="texto-ocr-entrenamiento" class="ocr" readonly placeholder="Selecciona un documento para revisar OCR."></textarea><div class="grid2"><label>Campo<select id="campo-anotacion"></select></label><label>Texto seleccionado<input id="texto-anotado" readonly></label></div><button id="guardar-anotacion" type="button">Guardar anotacion</button><p class="muted">Tip: selecciona en el OCR exactamente el valor del campo antes de guardar.</p></div></div></section>
+            </section>
+
+            <section id="tab-revision" class="tab-panel">
+                <section class="panel stack">
+                    <div class="panel-titulo">
+                        <div>
+                            <h2>Revision de documentos</h2>
+                            <p class="muted">Corrige los datos encontrados y deja vacio lo que el documento no trae. Cada dato validado puede alimentar el entrenamiento.</p>
+                        </div>
+                        <div class="acciones">
+                            <span id="resumen-revision" class="badge warn">0 pendientes</span>
+                            <button id="refrescar-revision" class="fantasma" type="button">Refrescar</button>
+                            <button class="fantasma" type="button" data-ir-tab="aprendizaje">Siguiente: aprendizaje</button>
+                        </div>
+                    </div>
+                    <div class="split revision-layout">
+                        <div class="stack">
+                            <div id="lista-revision" class="lista"></div>
+                        </div>
+                        <div class="stack">
+                            <div id="detalle-revision" class="vacio">Selecciona una pagina para revisar los datos detectados.</div>
+                            <form id="form-revision" class="stack revision-form" hidden>
+                                <div id="campos-revision" class="grid2"></div>
+                                <label>OCR de referencia<textarea id="ocr-revision" class="ocr" readonly></textarea></label>
+                                <button type="submit">Guardar correccion y mandar al lote</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
             </section>
 
             <section id="tab-aprendizaje" class="tab-panel">

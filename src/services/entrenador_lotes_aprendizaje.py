@@ -7,11 +7,16 @@ import spacy
 from spacy.training import Example
 
 from config import EPOCAS_ENTRENAMIENTO_LOTE, MODELS_DIR
-from src.services.configuracion_campos_documento import campos_evaluables_tipo, mapa_etiquetas_campos
+from src.services.configuracion_campos_documento import (
+    campos_evaluables_tipo,
+    campos_obligatorios_tipo,
+    mapa_etiquetas_campos,
+)
 from src.services.gestor_tipos_documento import obtener_ruta_modelo_activo, obtener_tipo_documento
 
 LONGITUD_MAXIMA_TEXTO_ENTRENAMIENTO = 6000
 RADIO_CONTEXTO_ENTIDAD = 220
+UMBRAL_F1_CAMPO_OBLIGATORIO = 0.60
 
 
 def entrenar_y_evaluar_lote(id_lote, documentos):
@@ -31,16 +36,29 @@ def dividir_documentos(documentos):
 
 
 def entrenar_modelo_candidato(tipo_documento, id_lote, documentos):
-    nlp = crear_modelo_base()
+    nlp, modelo_nuevo = crear_modelo_base(tipo_documento)
     ejemplos = crear_ejemplos_entrenamiento(nlp, tipo_documento, documentos)
-    entrenar_ejemplos(nlp, ejemplos)
+    entrenar_ejemplos(nlp, ejemplos, modelo_nuevo)
     return guardar_modelo_candidato(nlp, tipo_documento, id_lote)
 
 
-def crear_modelo_base():
+def crear_modelo_base(tipo_documento=None):
+    ruta_modelo = obtener_ruta_activa_si_existe(tipo_documento)
+    if ruta_modelo:
+        return spacy.load(ruta_modelo), False
     nlp = spacy.blank("es")
     nlp.add_pipe("ner")
-    return nlp
+    return nlp, True
+
+
+def obtener_ruta_activa_si_existe(tipo_documento):
+    if not tipo_documento:
+        return ""
+    try:
+        ruta_modelo = obtener_ruta_modelo_activo(tipo_documento)
+    except Exception:
+        return ""
+    return ruta_modelo if os.path.exists(ruta_modelo) else ""
 
 
 def crear_ejemplos_entrenamiento(nlp, tipo_documento, documentos):
@@ -133,15 +151,21 @@ def buscar_entidad(texto, valor, etiqueta):
     return inicio, inicio + len(valor), etiqueta
 
 
-def entrenar_ejemplos(nlp, ejemplos):
+def entrenar_ejemplos(nlp, ejemplos, modelo_nuevo=True):
     validar_ejemplos_entrenamiento(ejemplos)
     ner = nlp.get_pipe("ner")
     for ejemplo in ejemplos:
         agregar_etiquetas(ner, ejemplo)
-    optimizer = nlp.initialize(lambda: ejemplos)
+    optimizer = crear_optimizador_entrenamiento(nlp, ejemplos, modelo_nuevo)
     for _ in range(EPOCAS_ENTRENAMIENTO_LOTE):
         random.shuffle(ejemplos)
         nlp.update(ejemplos, sgd=optimizer, drop=0.25)
+
+
+def crear_optimizador_entrenamiento(nlp, ejemplos, modelo_nuevo):
+    if modelo_nuevo:
+        return nlp.initialize(lambda: ejemplos)
+    return nlp.resume_training()
 
 
 def validar_ejemplos_entrenamiento(ejemplos):
@@ -190,6 +214,8 @@ def evaluar_documento(modelo, tipo_documento, documento, resultados):
     predicciones = predecir_campos(modelo, texto, mapa_etiquetas_campos(tipo_documento))
     for campo in resultados:
         esperado = documento.get("campos_validados", {}).get(campo, "")
+        if not str(esperado or "").strip():
+            continue
         resultados[campo]["total"] += 1
         if campo_correcto(campo, esperado, predicciones.get(campo, "")):
             resultados[campo]["correctos"] += 1
@@ -400,8 +426,33 @@ def decidir_activacion(tipo_documento, metricas):
     comparacion = comparar_campos(metricas["activo"], metricas["candidato"], campos)
     empeorados = [campo for campo, datos in comparacion.items() if datos["resultado"] == "empeoro"]
     mejorados = [campo for campo, datos in comparacion.items() if datos["resultado"] == "mejoro"]
-    activar = not empeorados and bool(mejorados)
-    return {"activar": activar, "comparacion": comparacion, "recomendaciones": crear_recomendaciones(empeorados, mejorados)}
+    insuficientes = campos_obligatorios_insuficientes(tipo_documento, comparacion)
+    activar = puede_activar_modelo(empeorados, mejorados, insuficientes)
+    return {
+        "activar": activar,
+        "comparacion": comparacion,
+        "recomendaciones": crear_recomendaciones(empeorados, mejorados, insuficientes),
+    }
+
+
+def campos_obligatorios_insuficientes(tipo_documento, comparacion):
+    obligatorios = campos_obligatorios_tipo(tipo_documento) or list(comparacion.keys())
+    return [campo for campo in obligatorios if campo_insuficiente(comparacion, campo)]
+
+
+def campo_insuficiente(comparacion, campo):
+    datos = comparacion.get(campo, {})
+    if int(datos.get("total_candidato", 0)) == 0:
+        return False
+    return f1_candidato(comparacion, campo) < UMBRAL_F1_CAMPO_OBLIGATORIO
+
+
+def f1_candidato(comparacion, campo):
+    return float(comparacion.get(campo, {}).get("f1_candidato", 0))
+
+
+def puede_activar_modelo(empeorados, mejorados, insuficientes):
+    return not empeorados and not insuficientes and bool(mejorados)
 
 
 def comparar_campos(activo, candidato, campos):
@@ -411,7 +462,13 @@ def comparar_campos(activo, candidato, campos):
 def comparar_campo(activo, candidato):
     anterior = float(activo.get("f1", 0))
     nuevo = float(candidato.get("f1", 0))
-    return {"f1_anterior": anterior, "f1_candidato": nuevo, "resultado": describir_cambio(anterior, nuevo)}
+    return {
+        "f1_anterior": anterior,
+        "f1_candidato": nuevo,
+        "total_anterior": int(activo.get("total", 0)),
+        "total_candidato": int(candidato.get("total", 0)),
+        "resultado": describir_cambio(anterior, nuevo),
+    }
 
 
 def describir_cambio(anterior, nuevo):
@@ -422,9 +479,12 @@ def describir_cambio(anterior, nuevo):
     return "se_mantiene"
 
 
-def crear_recomendaciones(empeorados, mejorados):
+def crear_recomendaciones(empeorados, mejorados, insuficientes=None):
+    insuficientes = insuficientes or []
     if empeorados:
         return [f"Agregar mas ejemplos validados para: {', '.join(empeorados)}"]
+    if insuficientes:
+        return [f"Campos obligatorios debajo del umbral minimo: {', '.join(insuficientes)}"]
     if mejorados:
         return [f"Modelo candidato apto; mejoro: {', '.join(mejorados)}"]
     return ["Agregar mas variedad al lote; ningun campo obligatorio mejoro."]

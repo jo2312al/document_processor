@@ -25,8 +25,14 @@ from src.services.gestor_tipos_documento import (
     obtener_ruta_modelo_activo,
     obtener_tipo_documento,
 )
+from src.services.extractor_servicio_social import (
+    clasificar_servicio_social,
+    enriquecer_entidades_servicio_social,
+)
 
 ARCHIVO_LOG = os.path.join(LOGS_DIR, "predict.log")
+TIPO_SERVICIO_SOCIAL_GENERAL = "carta_terminacion_servicio_social"
+TIPOS_SERVICIO_SOCIAL_LEGADOS = {"constancia_servicio"}
 logging.basicConfig(
     filename=ARCHIVO_LOG,
     level=getattr(logging, LOGGING_LEVEL),
@@ -88,8 +94,11 @@ def predecir_entidades(ruta_pdf, id_tipo_documento=None, metodo_preprocesamiento
     if "error" in resultado_ocr:
         return resultado_ocr
 
+    clasificacion = clasificar_servicio_social(resultado_ocr["texto"])
+    contexto = _actualizar_contexto_por_clasificacion(contexto, clasificacion)
     entidades = _detectar_entidades(contexto["modelo"], resultado_ocr["texto"])
-    respuesta = _construir_respuesta(contexto["tipo_documento"], entidades, resultado_ocr)
+    entidades = _enriquecer_entidades_contexto(resultado_ocr["texto"], entidades, clasificacion)
+    respuesta = _construir_respuesta(contexto["tipo_documento"], entidades, resultado_ocr, clasificacion)
     _marcar_revision_si_corresponde(ruta_pdf, respuesta)
     return respuesta
 
@@ -100,12 +109,16 @@ def predict_entities(pdf_path, id_tipo_documento=None, metodo_preprocesamiento=N
 
 def _preparar_contexto_prediccion(id_tipo_documento):
     tipo_documento = _obtener_tipo_seguro(id_tipo_documento)
-    if "error" in tipo_documento:
+    if _es_respuesta_error(tipo_documento):
         return tipo_documento
     modelo = _cargar_modelo_seguro(tipo_documento)
-    if "error" in modelo:
+    if _es_respuesta_error(modelo):
         return modelo
     return {"tipo_documento": tipo_documento, "modelo": modelo}
+
+
+def _es_respuesta_error(valor):
+    return isinstance(valor, dict) and "error" in valor
 
 
 def _obtener_tipo_seguro(id_tipo_documento):
@@ -146,10 +159,37 @@ def _detectar_entidades(modelo, texto_ocr):
     return recolectar_entidades(documento_spacy)
 
 
-def _construir_respuesta(tipo_documento, entidades, resultado_ocr):
+def _actualizar_contexto_por_clasificacion(contexto, clasificacion):
+    tipo_actual = contexto["tipo_documento"]["id_tipo_documento"]
+    if not _requiere_tipo_servicio_social(tipo_actual, clasificacion):
+        return contexto
+    tipo_documento = _obtener_tipo_seguro(TIPO_SERVICIO_SOCIAL_GENERAL)
+    if _es_respuesta_error(tipo_documento):
+        return contexto
+    modelo = _cargar_modelo_seguro(tipo_documento)
+    if _es_respuesta_error(modelo):
+        return contexto
+    return {"tipo_documento": tipo_documento, "modelo": modelo}
+
+
+def _requiere_tipo_servicio_social(tipo_actual, clasificacion):
+    return (
+        tipo_actual in TIPOS_SERVICIO_SOCIAL_LEGADOS
+        and clasificacion["familia"] == "servicio_social"
+    )
+
+
+def _enriquecer_entidades_contexto(texto_ocr, entidades, clasificacion):
+    if clasificacion["familia"] != "servicio_social":
+        return entidades
+    return enriquecer_entidades_servicio_social(texto_ocr, entidades)
+
+
+def _construir_respuesta(tipo_documento, entidades, resultado_ocr, clasificacion):
     campos, faltantes = construir_campos_extraidos(tipo_documento, entidades)
     return {
         "tipo_documento": construir_resumen_tipo(tipo_documento),
+        "clasificacion_documental": clasificacion,
         "fields": campos,
         "campos_faltantes": faltantes,
         "confianza_global": calcular_confianza_campos(campos),
@@ -174,7 +214,7 @@ def _marcar_revision_si_corresponde(ruta_pdf, respuesta):
 def _crear_argumentos_cli():
     parser = argparse.ArgumentParser(description="Extrae entidades de un PDF con spaCy.")
     parser.add_argument("pdf_path", type=str, help="Ruta del PDF a procesar.")
-    parser.add_argument("--tipo-documento", type=str, default=None)
+    parser.add_argument("--tipo-documento", "--tipo", type=str, default=None)
     return parser.parse_args()
 
 
